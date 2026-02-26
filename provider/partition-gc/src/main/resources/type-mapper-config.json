@@ -1,0 +1,21 @@
+{
+  "instrumentations": [
+    {
+      "entityType": "org.opengroup.osdu.partition.coreplus.model.PartitionPropertyEntity",
+      "fieldNameCustomMapping": {
+        "partitionId": "partition_id",
+        "gcsVersionPaths": "bucket"
+      },
+      "fieldTypeCustomMapping": {
+      },
+      "identityTranslator": {
+        "getIdMethod": "getId",
+        "setIdMethod": "setId",
+        "keyClass": "java.lang.String"
+      },
+      "keyFields": [
+        "id"
+      ]
+    }
+  ]
+}

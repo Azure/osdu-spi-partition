@@ -1,0 +1,54 @@
+global:
+  domain: ""
+  useHttps: true
+  limitsEnabled: true
+  dataPartitionId: ""
+
+data:
+  # configmaps
+  logLevel: "ERROR"
+  secretAdminNamespace: "secret-admin"
+  # deployments
+  partitionSuffix: "_SYSTEM"
+  datafierSa: "datafier"
+  bucketPrefix: "refi"
+  minioExternalEndpoint: "" # use only if external minio is configured
+  minioIgnoreCertCheck: "false"
+  minioUIEndpoint: "http://minio:9001"
+  requestsCpu: "5m"
+  requestsMemory: "350Mi"
+  limitsCpu: "500m"
+  limitsMemory: "1G"
+  serviceAccountName: "partition"
+  imagePullPolicy: "IfNotPresent"
+  image: ""
+  bootstrapImage: ""
+  elasticHttps: ""
+  # featureFlags
+  indexerAugmenterEnabled: "false"
+  asIngestedCoordinatesEnabled: "false"
+  keywordLowerEnabled: "false"
+  bagOfWordsEnabled: "false"
+  collaborationsEnabled: "true"
+  autocompleteEnabled: "false"
+  policyServiceEnabled: "false"
+  edsEnabled: "false"
+
+conf:
+  appName: "partition"
+  configmap: "partition-config"
+  secret: "partition-postgres-secret"
+  replicas: 1
+
+auth:
+  realm: "osdu"
+  localUrl: "keycloak"
+
+istio:
+  proxyCPU: "5m"
+  proxyCPULimit: "500m"
+  proxyMemory: "64Mi"
+  proxyMemoryLimit: "512Mi"
+  bootstrapProxyCPU: "5m"
+  bootstrapProxyCPULimit: "100m"
+  sidecarInject: "true"

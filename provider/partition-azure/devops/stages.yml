@@ -1,0 +1,181 @@
+parameters:
+  environments: []
+
+stages:
+- ${{ each environment in parameters.environments }}:
+  - stage: 'Build_${{ environment.name }}'
+
+    variables:
+    - group: 'Azure Target Env - ${{environment.name}}'
+    - group: 'Azure Target Env Secrets - ${{environment.name}}'
+    - group: 'AKS Target Env - ${{ environment.name }}'
+    - name: tag
+      value: 'v1'
+
+    jobs:
+    - job: MavenPackageAndPublishArtifacts
+      displayName: Maven Package and Publish Artifacts
+      pool: $(AGENT_POOL)
+
+      steps:
+      - ${{ if eq(environment.name, 'devint') }}:
+        - task: Maven@3
+          displayName: 'Maven: build, test, and install partition-core'
+          inputs:
+            mavenPomFile: 'pom.xml'
+            goals: 'install'
+            options: '--settings ./maven/settings.xml -DVSTS_FEED_TOKEN=$(VSTS_FEED_TOKEN)'
+            codeCoverageToolOption: JaCoCo
+        - task: Maven@3
+          displayName: 'Maven, partition-azure: test, code coverage'
+          inputs:
+            mavenPomFile: 'pom.xml'
+            goals: 'test'
+            options: '--settings ./maven/settings.xml -DVSTS_FEED_TOKEN=$(VSTS_FEED_TOKEN) -P partition-aks'
+            testResultsFiles: '**/*/TEST-*.xml'
+            codeCoverageToolOption: JaCoCo
+        - task: Maven@3
+          displayName: 'Maven, partition-aks: package'
+          inputs:
+            mavenPomFile: 'pom.xml'
+            goals: 'package'
+            options: '--settings ./maven/settings.xml -DVSTS_FEED_TOKEN=$(VSTS_FEED_TOKEN) -P partition-aks -DskipTests'
+        - bash: |
+            #!/bin/bash
+            set -e
+            pushd provider/partition-azure
+            docker login -u $(dockerId) -p $(dockerPassword) $(dockerId).azurecr.io
+            docker build -t $(dockerId).azurecr.io/$(imageName):$(tag) --build-arg PARTITION_JAR_PATH=$(partitionJarPath) .
+            echo 'Image done.'
+
+            docker push $(dockerId).azurecr.io/$(imageName)
+            docker tag $(dockerId).azurecr.io/$(imageName):$(tag) $(dockerId).azurecr.io/$(imageName):latest
+
+            echo 'Added $(dockerId).azurecr.io/$(imageName):latest tag to $(dockerId).azurecr.io/$(imageName):$(tag)'
+            docker push $(dockerId).azurecr.io/$(imageName):$(tag)
+
+            echo 'Pushed $(dockerId).azurecr.io/$(imageName):$(tag)'
+            docker push $(dockerId).azurecr.io/$(imageName):latest
+            echo 'Pushed $(dockerId).azurecr.io/$(imageName):latest'
+          displayName: 'build and upload docker image $(dockerId).azurecr.io/$(imageName)'
+      - bash: |
+          #!/bin/bash
+          set -e
+          pushd provider/partition-azure/partition-aks
+          sed "s|client-id|$(AZURE_AD_APP_RESOURCE_ID)|g" values.yaml.tmpl > values.yaml
+          sed -i "s|appinsights_key|$(AZURE_DEPLOY_APP_INSIGHT_KEY)|g" values.yaml
+          sed -i "s|KEYVAULT_URI|$(AZURE_KEYVAULT_URI)|g" values.yaml
+          sed -i "s|AZURE_CLIENT_ID|$(AZURE_DEPLOY_CLIENT_ID)|g" values.yaml
+          sed -i "s|AZURE_CLIENT_SECRET|$(AZURE_DEPLOY_CLIENT_SECRET)|g" values.yaml
+          sed -i "s|AZURE_TENANT_ID|$(AZURE_DEPLOY_TENANT)|g" values.yaml
+          echo "Content:"
+          cat values.yaml
+          echo ""
+          popd
+        displayName: 'generate values.yaml with actual variables'
+      - bash: |
+          #!/bin/bash
+          set -e
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+          # package helm chart
+          helm package provider/partition-azure/partition-aks --version 0.0.1 --destination '$(build.artifactstagingdirectory)'
+        displayName: 'install helm 3 and package helm chart'
+      - bash: |
+          #!/bin/bash
+          set -e
+          # Zip integration tests and upload it as artifact
+          zip -r testing.zip testing
+          cp testing.zip $(build.artifactstagingdirectory)
+        displayName: 'Zip integration tests and upload it as artifact'
+      - upload: $(Build.ArtifactStagingDirectory)
+        artifact: drop_${{environment.name}}
+
+  - stage: Deploy_${{environment.name}}
+    dependsOn: 'Build_${{ environment.name }}'
+    condition: succeeded()
+
+    variables:
+    - group: 'Azure Target Env - ${{environment.name}}'
+    - group: 'Azure Target Env Secrets - ${{environment.name}}'
+    - group: 'AKS Target Env - ${{ environment.name }}'
+    - name: tag
+      value: 'v1'
+
+    jobs:
+    - deployment: DeployLinuxWebApp
+      displayName: Deploy Linux Web App
+      environment: ${{ environment.name }}
+      pool: $(AGENT_POOL)
+
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - task: DownloadSecureFile@1
+              name: kubeConfig
+              inputs:
+                secureFile: 'kubeconfig-${{environment.name}}'
+            - task: KubectlInstaller@0
+              displayName: 'Install Kubectl latest'
+            - bash: |
+                #!/bin/bash
+                set -e
+                curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+                chmod 700 get_helm.sh
+                ./get_helm.sh
+              displayName: 'Install helm 3'
+            - task: HelmDeploy@0
+              displayName: 'helm upgrade'
+              inputs:
+                connectionType: Kubernetes Service Connection
+                kubernetesServiceEndpoint: ${{ environment.kubeconfig }}
+                command: upgrade
+                options: '--force --wait'
+                chartType: FilePath
+                chartPath: '$(Pipeline.Workspace)/drop_${{environment.name}}/partition-aks-0.0.1.tgz'
+                releaseName: 'partition-aks'
+
+            - bash: |
+                #!/bin/bash
+                set -e
+                kubectl --kubeconfig $(kubeConfig.secureFilePath) rollout restart deployment/partition-aks
+              displayName: 'kubectl rollout restart deployment/partition-aks'
+            - ${{ if or(eq(environment.name, 'devint'), eq(environment.name, 'qa')) }}:
+              - bash: |
+                  #!/bin/bash
+                  set -e
+                  sleep 60
+                  printf 'waiting for service to be ready:'
+                  attempt_counter=0
+                  max_attempts=60
+                  # NOTE that the PARTITION_BASE_URL already has a '/' at the end of it
+                  until [ $(curl -s -o /dev/null -w "%{http_code}" $(PARTITION_BASE_URL)api/partition/v1/actuator/health) -eq 200 ]; do
+                  if [ ${attempt_counter} -eq ${max_attempts} ];then
+                      echo "Service is not available, please check the deployment"
+                      exit 1
+                  fi
+                  printf 'waiting for service to be ready'
+                  attempt_counter=$(($attempt_counter+1))
+                  sleep 2
+                  done
+                  echo "Current working directory: "
+                  pwd
+                  echo "Contents of $(Pipeline.Workspace)/drop_${{environment.name}}: "
+                  ls -al $(Pipeline.Workspace)/drop_${{environment.name}}
+                  # Unzip integration tests
+                  unzip $(Pipeline.Workspace)/drop_${{environment.name}}/testing.zip -d $(Pipeline.Workspace)/drop_${{environment.name}}/
+                displayName: 'Unzip integration tests'
+              - task: Maven@3
+                displayName: 'Maven: install partition-test-core'
+                inputs:
+                  mavenPomFile: '../drop_${{environment.name}}/testing/partition-test-core/pom.xml'
+                  goals: 'install'
+                  options: '--settings ../drop_${{environment.name}}/testing/maven/settings.xml -DVSTS_FEED_TOKEN=$(VSTS_FEED_TOKEN)'
+              - task: Maven@3
+                displayName: 'Maven: Integration testing provider'
+                inputs:
+                  mavenPomFile: '../drop_${{environment.name}}/testing/partition-test-azure/pom.xml'
+                  goals: 'test'
+                  options: '--settings ../drop_${{environment.name}}/testing/maven/settings.xml -DVSTS_FEED_TOKEN=$(VSTS_FEED_TOKEN) -DINTEGRATION_TESTER=$(INTEGRATION_TESTER) -DNO_DATA_ACCESS_TESTER=$(NO_DATA_ACCESS_TESTER) -DTESTER_SERVICEPRINCIPAL_SECRET=$(AZURE_TESTER_SERVICEPRINCIPAL_SECRET) -DNO_DATA_ACCESS_TESTER_SERVICEPRINCIPAL_SECRET=$(NO_DATA_ACCESS_TESTER_SERVICEPRINCIPAL_SECRET) -DAZURE_AD_TENANT_ID=$(AZURE_DEPLOY_TENANT) -DAZURE_AD_APP_RESOURCE_ID=$(AZURE_AD_APP_RESOURCE_ID) -DBASE_URL=$(BASE_URL) -DVIRTUAL_SERVICE_HOST_NAME=$(VIRTUAL_SERVICE_HOST_NAME) -DENVIRONMENT=$(ENVIRONMENT) -DCLIENT_TENANT=$(CLIENT_TENANT) -DMY_TENANT=$(MY_TENANT) -DPARTITION_BASE_URL=$(PARTITION_BASE_URL) -DAZURE_AD_OTHER_APP_RESOURCE_ID=$(AZURE_AD_OTHER_APP_RESOURCE_ID)'

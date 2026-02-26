@@ -1,0 +1,72 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: header-2-add-user-from-keycloak-token
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: envoy.filters.network.http_connection_manager
+            subFilter:
+              name: envoy.lua.remove-user-appid-header
+    patch:
+      operation: INSERT_AFTER
+      value:
+        name: envoy.lua.user-from-keycloak-token
+        typed_config:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+          inlineCode: |
+            keycloak_issuer = "http://x.x.x.x/auth/realms/OSDU"
+          
+            function version()       
+               return "Token Exchange: "
+            end    
+          
+            function log(handle,value)     
+               handle:logWarn(version() .. ": " .. value)
+            end
+
+            -- dump a lua object into a string for logging
+            function dump(o)
+              if type(o) == 'table' then
+               local s = '{ '
+                 for k,v in pairs(o) do
+                   if type(k) ~= 'number' then k = '"'..k..'"' end
+                   s = s .. '['..k..'] = ' .. dump(v) .. ','
+                 end
+                return s .. '} '
+              else
+                return tostring(o)
+              end
+            end 
+            
+            
+            function get_header(handle, header)      
+               return handle:headers():get(header)
+            end
+            
+            function  envoy_on_request(request_handle)  
+               log(request_handle, "Inside the Keycloak filter: " .. keycloak_issuer) 
+               local jwt_authn = request_handle:streamInfo():dynamicMetadata():get("envoy.filters.http.jwt_authn")
+              
+               log(request_handle, "END DISPLAYING REQUEST HEADERS")
+               log(request_handle, "JWT Token" .. dump(jwt_authn))  
+               log(request_handle, "JWT Token - Preferred user name " .. jwt_authn[keycloak_issuer]["preferred_username"])  
+               log(request_handle, "JWT Token - Preferred user name " .. jwt_authn[keycloak_issuer]["email"])
+
+               if jwt_authn then    
+                  if jwt_authn[keycloak_issuer] then      
+                     log(request_handle, "inside jwt valid token")      
+                     request_handle:headers():add("x-app-id", jwt_authn[keycloak_issuer]["azp"])      
+                     if jwt_authn[keycloak_issuer]["email"] then        
+                        log(request_handle, "Email Id" .. jwt_authn[keycloak_issuer]["email"])
+                        request_handle:headers():add("x-user-id", jwt_authn[keycloak_issuer]["email"])
+                     end    
+                  end  
+               end
+            end
+

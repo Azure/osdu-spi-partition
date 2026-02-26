@@ -1,0 +1,37 @@
+variables:
+  GC_SERVICE: partition
+  GC_HELM_DEPLOYMENT_DIR: "devops/gc-quarkus/deploy"
+  GC_ENABLE_BOOTSTRAP: "false"
+  BUILD_PATH: provider/partition-gc-quarkus/cloudbuild/Dockerfile.cloudbuild
+
+gc-compile-and-unit-test:
+  extends:
+    - .gc-variables
+  stage: csp-build
+  needs: ["compile-and-unit-test"]
+  image: maven:3.9.3-eclipse-temurin-17
+  variables:
+    MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  before_script:
+    - "mkdir -p .m2/repository"
+  script:
+    - cd provider/partition-gc-quarkus
+    - mvn clean package
+  artifacts:
+    paths:
+      - provider/partition-gc-quarkus/target/quarkus-app/
+  rules:
+    - if: $GC == "1"
+      when: on_success
+
+gc-deploy:
+  variables:
+    GC_HELM_SETS: "--set data.tenantServiceAccount=${ADMIN_USER_EMAIL} --set data.databaseId="
+
+gc-dev2-deploy:
+  variables:
+    GC_HELM_SETS: "--set data.tenantServiceAccount=${GC_ADMIN_USER_EMAIL} --set data.databaseId="
+
+gc-preship-deploy:
+  variables:
+    GC_HELM_SETS: "--set data.projectId=${GC_DATA_PROJECT} --set data.tenantServiceAccount=${ADMIN_USER_EMAIL} --set data.databaseId="

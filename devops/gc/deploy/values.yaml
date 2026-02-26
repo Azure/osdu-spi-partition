@@ -1,0 +1,83 @@
+global:
+  domain: ""
+  limitsEnabled: true
+  dataPartitionId: ""
+  logLevel: "ERROR"
+  tier: ""
+  autoscalingMode: "cpu"
+
+data:
+  # configmaps
+  logLevel: ""
+  projectId: ""
+  dataProjectId: ""
+  partitionHost: "partition"
+  partitionNamespace: "partition"
+  partitionSuffix: "_SYSTEM"
+  datafierSa: "datafier"
+  databaseId: ""
+  elasticHttps: ""
+  # deployments
+  requestsCpu: "50m"
+  requestsMemory: "350Mi"
+  limitsCpu: "500m"
+  limitsMemory: "1G"
+  serviceAccountName: "partition"
+  imagePullPolicy: "IfNotPresent"
+  image: "community.opengroup.org:5555/osdu/platform/system/partition/osdu-gcp-partition:latest"
+  bootstrapImage: "community.opengroup.org:5555/osdu/platform/system/partition/osdu-gcp-bootstrap-partition:latest"
+  affinityLabelsSpot:
+    cloud.google.com/gke-provisioning:
+      - spot
+  affinityLabelsStandard:
+    cloud.google.com/gke-provisioning:
+      - standard
+  # featureFlags
+  indexerAugmenterEnabled: "true"
+  policyServiceEnabled: "true"
+  edsEnabled: "false"
+  autocompleteEnabled: "true"
+  asIngestedCoordinatesEnabled: "true"
+  keywordLowerEnabled: "true"
+  bagOfWordsEnabled: "true"
+  xCollaborationEnabled: "false"
+
+conf:
+  appName: "partition"
+  configmap: "partition-config"
+
+istio:
+  proxyCPU: "5m"
+  proxyCPULimit: "500m"
+  proxyMemory: "64Mi"
+  proxyMemoryLimit: "512Mi"
+  bootstrapProxyCPU: "5m"
+  bootstrapProxyCPULimit: "100m"
+  sidecarInject: "true"
+  partitionEditors: []
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 6
+  cpu:
+    utilization: 200
+    scaleUpStabilizationWindowSeconds: 30
+    scaleUpValue: 200
+    scaleUpPeriod: 15
+    scaleDownStabilizationWindowSeconds: 150
+    scaleDownValue: 100
+    scaleDownPeriod: 15
+  requests:
+    targetType: "AverageValue"
+    targetValue: 400
+    scaleUpStabilizationWindowSeconds: 10
+    scaleUpValue: 50
+    scaleUpPeriod: 15
+    scaleDownStabilizationWindowSeconds: 60
+    scaleDownValue: 25
+    scaleDownPeriod: 60
+
+limits:
+  maxTokens: 300
+  tokensPerFill: 300
+  fillInterval: "1s"

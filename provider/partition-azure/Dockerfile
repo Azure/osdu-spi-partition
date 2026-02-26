@@ -1,0 +1,23 @@
+FROM openjdk:8-jdk-alpine
+
+ARG client-id
+ARG appinsights_key
+ARG KEYVAULT_URI
+ARG AZURE_CLIENT_ID
+ARG AZURE_CLIENT_SECRET
+ARG AZURE_TENANT_ID
+
+ENV client-id=$client-id
+ENV appinsights_key=$appinsights_key
+ENV KEYVAULT_URI=$KEYVAULT_URI
+ENV AZURE_CLIENT_ID=$AZURE_CLIENT_ID
+ENV AZURE_CLIENT_SECRET=$AZURE_CLIENT_SECRET
+ENV AZURE_TENANT_ID=$AZURE_TENANT_ID
+
+ENV JAVA_OPTS="-Xmx1512m -Xms1g"
+
+EXPOSE 8080
+
+COPY /target/partition-aks-1.0.0.jar /app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+

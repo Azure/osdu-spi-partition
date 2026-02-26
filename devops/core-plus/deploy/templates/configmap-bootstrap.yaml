@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: "{{ .Values.conf.appName }}-bootstrap"
+  name: "{{ .Values.conf.configmap }}-bootstrap"
+  namespace: "{{ .Release.Namespace }}"
+data:
+  PARTITION_HOST: "partition"
+  PARTITION_SUFFIX: {{ .Values.data.partitionSuffix | quote }}
+  DATA_PARTITION_ID: {{ .Values.global.dataPartitionId | quote }}
+  ENVIRONMENT: "anthos"
+  SERVICE_ACCOUNT: {{ printf "%s@service.local" .Values.data.datafierSa | quote }}
+  DOMAIN: "{{ .Values.global.domain }}"
+  SECRET_SERVICE_NAMESPACE: {{ printf "%s-%s" .Release.Namespace .Values.data.secretAdminNamespace | quote }}
+  BUCKET_PREFIX: {{ .Values.data.bucketPrefix | quote }}
+  MINIO_ENDPOINT: {{ default "http://minio:9000" .Values.data.minioExternalEndpoint | quote }}
+  MINIO_UI_ENDPOINT: {{ .Values.data.minioUIEndpoint | quote }}
+  {{- if .Values.global.useHttps }}
+  MINIO_EXTERNAL_ENDPOINT: {{ default (printf "https://s3.%s" .Values.global.domain) .Values.data.minioExternalEndpoint | quote }}
+  {{- else }}
+  MINIO_EXTERNAL_ENDPOINT: {{ default (printf "http://s3.%s" .Values.global.domain) .Values.data.minioExternalEndpoint | quote }}
+  {{- end }}
+  MINIO_IGNORE_CERT_CHECK: {{ .Values.data.minioIgnoreCertCheck | quote }}
+  AS_INGESTED_COORDINATES_ENABLED: {{ .Values.data.asIngestedCoordinatesEnabled | quote }}
+  KEYWORD_LOWER_ENABLED: {{ .Values.data.keywordLowerEnabled | quote }}
+  BAG_OF_WORDS_ENABLED: {{ .Values.data.bagOfWordsEnabled | quote }}
+  COLLABORATIONS_ENABLED: {{ .Values.data.collaborationsEnabled | quote }}
+  AUTOCOMPLETE_ENABLED: {{ .Values.data.autocompleteEnabled | quote }}
+  INDEXER_AUGMENTER_ENABLED: {{ .Values.data.indexerAugmenterEnabled | quote }}
+  EDS_ENABLED: {{ .Values.data.edsEnabled | quote }}
+  POLICY_SERVICE_ENABLED: {{ .Values.data.policyServiceEnabled | quote }}
+  ELASTIC_HTTPS: {{ .Values.data.elasticHttps | quote }}

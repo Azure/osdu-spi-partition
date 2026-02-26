@@ -1,0 +1,10 @@
+{
+  "non.sensitive.property": {
+    "sensitive": false,
+    "value": "Non sensitive value"
+  },
+  "sensitive.property": {
+    "sensitive": true,
+    "value": "SENSITIVE_PROPERTY"
+  }
+}

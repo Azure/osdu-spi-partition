@@ -1,0 +1,10 @@
+{
+  "second.non.sensitive.property": {
+    "sensitive": false,
+    "value": "Non sensitive value(second)"
+  },
+  "second.sensitive.property": {
+    "sensitive": true,
+    "value": "SENSITIVE_PROPERTY_SECOND"
+  }
+}

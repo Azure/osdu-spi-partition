@@ -1,0 +1,56 @@
+# Maven package Java project Web App to Linux on Azure
+# Build your Java project and deploy it to Azure as a Linux web app
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+# Required Group Variables - `Service Pipeline Variables`
+# VM_IMAGE_NAME -- Agent VM image name
+# AZURE_SUBSCRIPTION - ${{env_name}} -- Azure Resource Manager service connection created during pipeline creation
+
+# Required Group Variables - `Service Pipeline Variables - {env_name}`
+# AZURE_AD_APP_RESOURCE_ID
+# AZURE_AD_OTHER_APP_RESOURCE_ID
+# AZURE_AD_TENANT_ID -- Azure Subscription Id
+# DOMAIN
+# ENTITLEMENT_URL -- end with '/'
+# ENVIRONMENT_NAME
+# EXPIRED_TOKEN
+# INTEGRATION_TESTER
+# MY_TENANT
+# ENTITLEMENTS_WEBAPPNAME
+
+trigger:
+  branches:
+    include:
+    - master
+  paths:
+    exclude:
+    - README.md
+    - OpenDES_Azure_Security.md
+    - .gitignore
+    - images/*
+
+variables:
+- group: 'AZURE_REGISTRY_DELFI'
+- group: 'Azure Common Secrets'
+- group: 'Azure - Common'
+- group: 'Azure Service Release - partition'
+- name: imageName
+  value: 'partition-aks'
+- name: partitionJarPath
+  value: 'provider/partition-azure/target/partition-aks-*.jar'
+
+stages:
+- template: stages.yml
+  parameters:
+    environments:
+    - name: 'devint'
+      kubeconfig: 'devint-aks-kubeconfig'
+    - ${{ if eq(variables['Build.SourceBranchName'], 'master') }}:
+      - name: 'qa'
+        kubeconfig: 'qa-aks-kubeconfig'
+      - name: 'prod'
+        kubeconfig: 'prod-aks-kubeconfig'
+      # Below env was commented because we've already got a working cluster with the valid certificate from the trusted issuer in the CVXTMP
+      # - name: 'cvxtmp'
+      #   kubeconfig: 'prod-aks-cvxtmp-kubeconfig'

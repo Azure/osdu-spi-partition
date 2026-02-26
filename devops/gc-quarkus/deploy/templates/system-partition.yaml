@@ -1,0 +1,118 @@
+#  Copyright 2025 Google LLC
+#  Copyright 2025 EPAM
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: {{ .Values.conf.appName | quote }}
+  name: {{ printf "%s-system-partition" .Values.conf.appName | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+data:
+  system.json: |-
+    {
+      {{- if not (empty .Values.data.customSystemPartitionProperties) }}
+      {{- range .Values.data.customSystemPartitionProperties }}
+      {{ printf "%s: {" (toJson .name) }}
+        "sensitive": {{ .sensitive }},
+        "value": {{ toJson .value }}
+      },
+      {{- end }}
+      {{- end }}
+      "projectId": {
+        "sensitive": false,
+        "value": {{ .Values.data.projectId | quote }}
+      },
+      "serviceAccount": {
+        "sensitive": false,
+        "value": {{ .Values.data.tenantServiceAccount | quote }}
+      },
+      "complianceRuleSet": {
+        "sensitive": false,
+        "value": "shared"
+      },
+      "dataPartitionId": {
+        "sensitive": false,
+        "value": "system"
+      },
+      "name": {
+        "sensitive": false,
+        "value": "system"
+      },
+      "crmAccountID": {
+        "sensitive": false,
+        "value": "[system,system]"
+      },
+      "osm.datastore.database.id": {
+        "sensitive": false,
+        "value": {{ .Values.data.databaseId | quote }}
+      },
+      "entitlements.datasource.url": {
+        "sensitive": true,
+        "value": "ENT_PG_URL_SYSTEM"
+      },
+      "entitlements.datasource.username": {
+        "sensitive": true,
+        "value": "ENT_PG_USER_SYSTEM"
+      },
+      "entitlements.datasource.password": {
+        "sensitive": true,
+        "value": "ENT_PG_PASS_SYSTEM"
+      },
+      "entitlements.datasource.schema": {
+        "sensitive": true,
+        "value": "ENT_PG_SCHEMA_SYSTEM"
+      },
+      "system.schema.bucket.name": {
+        "sensitive": false,
+        "value": {{ printf "%s-system-schema" .Values.data.projectId | quote }}
+      },
+      "schema.bucket.name": {
+        "sensitive": false,
+        "value": {{ printf "%s-%s-schema" .Values.data.projectId .Values.global.dataPartitionId | quote }}
+      },
+      "system.eds.enabled": {
+        "sensitive": false,
+        "value": {{ .Values.data.edsEnabled | quote }}
+      },
+      "system.featureFlag.opa.enabled": {
+        "sensitive": false,
+        "value": {{ .Values.data.policyServiceEnabled | quote }}
+      },
+      "system.featureFlag.policy.enabled": {
+        "sensitive": false,
+        "value": {{ .Values.data.policyServiceEnabled | quote }}
+      },
+      "system.featureFlag.autocomplete.enabled": {
+        "sensitive": false,
+        "value": {{ .Values.data.autoCompleteEnabled | quote }}
+      },
+      "system.featureFlag.asIngestedCoordinates.enabled": {
+        "sensitive": false,
+        "value": {{ .Values.data.asIngestedCoordinatesEnabled | quote }}
+      },
+      "system.featureFlag.keywordLower.enabled": {
+        "sensitive": false,
+        "value": {{ .Values.data.keyWordLowerEnabled | quote }}
+      },
+      "system.featureFlag.bagOfWords.enabled": {
+        "sensitive": false,
+        "value": {{ .Values.data.bagOfWordsEnabled | quote }}
+      },
+      "collaborations-enabled": {
+        "sensitive": false,
+        "value": {{ .Values.data.xCollaborationEnabled | quote }}
+      }
+    }

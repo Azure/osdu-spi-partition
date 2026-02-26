@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ibm-partition-deploy.fullname" . }}
+  labels:
+    {{- include "ibm-partition-deploy.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "ibm-partition-deploy.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "ibm-partition-deploy.selectorLabels" . | nindent 8 }}
+        sidecar.istio.io/inject: "{{ .Values.sidecarIstioInjected }}"
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "ibm-partition-deploy.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: {{ .Values.initimage.name }}
+          image: {{ .Values.initimage.initrepository }}:{{ .Values.initimage.tag }}
+          imagePullPolicy: {{ .Values.initimage.pullPolicy }}
+          command: ['sh', '-c', './health_probe.sh $(HEALTH_URI) && sleep 5']
+          env:
+            - name: HEALTH_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: partition-config
+                  key: ibm.db.url
+        - resources: {}
+          terminationMessagePath: /dev/termination-log
+          name: cm-config
+          imagePullPolicy: IfNotPresent
+          terminationMessagePolicy: File
+          image: >-
+            quay.io/openshift/okd-content@sha256:184ac501d886c4e5a51a308a46259987e076662cb611cbd6d3d0dfc75096692d
+          command:
+            - sh
+            - /opt/script/configMap_update_script.sh
+          volumeMounts:
+            - mountPath: /opt/script
+              name: update-script-configmap
+              readOnly: false
+      volumes:
+        - configMap:
+            name: update-script-configmap
+          name: update-script-configmap 
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: ibm.db.password
+              valueFrom:
+                secretKeyRef:
+                  key: adminPassword
+                  name: {{ .Release.Name }}-couchdb
+          envFrom:
+          - configMapRef:
+              name: "{{ .Values.conf.configmap }}"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

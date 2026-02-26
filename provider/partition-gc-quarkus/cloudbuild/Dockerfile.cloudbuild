@@ -1,0 +1,18 @@
+FROM community.opengroup.org:5555/osdu/platform/deployment-and-operations/base-containers-gcp/gc-osdu-java-image/gc-osdu-java-17-base-master:latest
+WORKDIR /app
+
+ARG PROVIDER_NAME
+ENV PROVIDER_NAME $PROVIDER_NAME
+
+ARG PORT
+ENV PORT $PORT
+
+# Copy the quarkus-app dir to the production image from the builder stage.
+COPY provider/partition-gc-quarkus/target/quarkus-app/ /app/
+
+# Base image entrypoint will inject telemetry if OTEL_JAVAAGENT_ENABLED=true
+ENV JAVA_OPTS="-Dserver.port=${PORT} -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+
+# Run the web service on container startup.
+# Base image entrypoint will intercept 'java' command and inject JAVA_OPTS automatically
+CMD java $JAVA_OPTS -jar /app/quarkus-run.jar

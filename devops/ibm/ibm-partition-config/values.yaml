@@ -1,0 +1,50 @@
+data:
+  # common
+  logLevel: "INFO"
+  javaAppJar: "/deployments/*-spring-boot.jar"
+  serverPort: 8080
+  # ibm
+  contextPath: "/api/partition/v1"
+  beanDefOverriding: true
+  acceptHttp: true
+  #get-keycloakAuthUrl-from-post-install-kc-ingress
+  keycloakAuthUrl: http://tbd/auth
+  #get-keycloakClientSecret-from-post-install-kcadm
+  keycloakClientSecret: tbd
+  #get-svcPartionAdminUser
+  svcPartionAdminUser: partition-service-admin@opengroup.org
+  logPrefix: partition
+  cacheExpiration: 9000
+  cahceMaxSize: 2000
+  healthCheckUri: "/api/partition/v1/_ah/liveness_check,/api/partition/v1/_ah/readiness_check,/api/partition/v1/info,/api/partition/v1/api-docs"
+  loggingLevelOsdu: debug
+  loggingLevelSpring: debug
+  #get-from-svc-name-template
+  authorizeAPI: http://TBD:8080/api/entitlements/v2
+  deployEnv: CLOUD
+  #get-from-svc-name-template
+  dbURL: http://tbd:5984
+  #get-from-existing secret
+  dbUser: admin
+  envPrefix: ibm-iks
+  envPrefixProject: ibm-ibm-build
+  #get-keycloakAuthHostName-from-post-install-kc-ingress
+  keycloakEndPointHost: tbd
+  keycloakRealm: OSDU
+  keycloakUserEmail: admin-sa@ibm.com
+  #move to secre. do not commit.
+  #get-from-existing secret  
+  dbPassw: tbd
+  #get-from-svc-name-template
+  patitionAPI: http://tbd:8080/api/partition/v1
+  #get-from-svc-name-template
+  policyAPI: http://tbd:8080/api/policy/v1
+  kcClientId: partition-service
+  grantType: password
+  #get-from-job or dynamically
+  kcPassword: tbd
+  kcUser: partition-service-admin
+  tenantCacheExpiryInSec: 10000
+  #make java options conditional in template
+conf:
+  configmap: "partition-config"

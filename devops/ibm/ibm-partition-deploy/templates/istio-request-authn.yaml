@@ -1,0 +1,10 @@
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: core-request-authn
+spec:
+  jwtRules:
+  - forwardOriginalToken: true
+    issuer: http://{{ (index (lookup "v1" "Service" "istio-ingress" "istio-ingress").status.loadBalancer.ingress 0).ip }}/auth/realms/OSDU
+    jwksUri: http://{{ (index (lookup "v1" "Service" "istio-ingress" "istio-ingress").status.loadBalancer.ingress 0).ip }}/auth/realms/OSDU/protocol/openid-connect/certs
+    outputPayloadToHeader: x-payload

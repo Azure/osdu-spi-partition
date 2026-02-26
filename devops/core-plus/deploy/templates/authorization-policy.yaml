@@ -1,0 +1,41 @@
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ printf "%s-policy" .Values.conf.appName | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.conf.appName | quote }}
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/{{ $.Release.Namespace }}/sa/{{ printf "%s-bootstrap" .Values.data.serviceAccountName }}
+    to:
+    - operation:
+        paths:
+        - /api/partition/v1/*
+  - to:
+    - operation:
+        methods:
+        - GET
+        paths:
+        - /api/partition/v1/*
+  - to:
+    - operation:
+        methods:
+        - OPTIONS
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        paths:
+        - /api/partition/v1/*
+    when:
+    - key: request.auth.claims[iss]
+      values:
+      - https://keycloak.{{ .Values.global.domain }}/realms/{{ .Values.auth.realm }}
+      - http://keycloak.{{ .Values.global.domain }}/realms/{{ .Values.auth.realm }}
+      - http://keycloak/realms/{{ .Values.auth.realm }}
