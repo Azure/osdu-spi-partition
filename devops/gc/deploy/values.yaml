@@ -40,7 +40,7 @@ data:
   asIngestedCoordinatesEnabled: "true"
   keywordLowerEnabled: "true"
   bagOfWordsEnabled: "true"
-  xCollaborationEnabled: "false"
+  xCollaborationEnabled: "true"
 
 conf:
   appName: "partition"
