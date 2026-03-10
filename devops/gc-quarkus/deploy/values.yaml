@@ -37,7 +37,7 @@ data:
   asIngestedCoordinatesEnabled: true
   keyWordLowerEnabled: true
   bagOfWordsEnabled: true
-  xCollaborationEnabled: false
+  xCollaborationEnabled: true
   customSystemPartitionProperties:
     # example of custom property
     # - name: foo
