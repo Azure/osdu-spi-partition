@@ -3,9 +3,9 @@
 ## How to file issues and get help
 
 This project uses GitHub Issues to track bugs and feature requests. Please search the
-[existing issues](https://github.com/Azure/osdu-spi-partition/issues) before filing new issues
+[existing issues](/issues) before filing new issues
 to avoid duplicates. For new issues, file your bug or feature request as a
-[new Issue](https://github.com/Azure/osdu-spi-partition/issues/new).
+[new Issue](/issues/new).
 
 For help and questions about using this project, please open an issue against the
 GitHub repository. We actively triage these and will work on this as best effort.
