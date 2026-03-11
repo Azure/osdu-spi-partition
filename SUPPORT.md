@@ -14,4 +14,4 @@ To report a security issue, please see our [security guidance](./SECURITY.md).
 
 ## Microsoft Support Policy
 
-Support for this **PROJECT or PRODUCT** is limited to the resources listed above.
+Support for this project is limited to the resources listed above.
