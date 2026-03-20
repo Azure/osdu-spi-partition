@@ -1,4 +1,4 @@
-openapi: 3.0.1
+openapi: 3.1.0
 info:
   title: Partition Service
   description: Partition service is responsible for creating and retrieving the partition
@@ -29,6 +29,11 @@ paths:
       summary: List all Partitions
       description: Returns all existing data partitions
       operationId: list
+      parameters:
+      - name: data-partition-id
+        in: header
+        description: Tenant Id
+        required: true
       responses:
         "200":
           description: OK
@@ -38,8 +43,8 @@ paths:
                 type: array
                 items:
                   type: string
-        "404":
-          description: Not Found
+        "400":
+          description: Bad Request
           content:
             application/json:
               schema:
@@ -50,26 +55,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AppError"
-        "400":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AppError"
         "403":
           description: User not authorized to perform the action.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AppError"
-        "502":
-          description: Bad Gateway
+        "404":
+          description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AppError"
         "500":
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppError"
+        "502":
+          description: Bad Gateway
           content:
             application/json:
               schema:
@@ -97,9 +102,19 @@ paths:
         required: true
         schema:
           type: string
+      - name: data-partition-id
+        in: header
+        description: Tenant Id
+        required: true
       responses:
-        "404":
-          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Map"
+        "400":
+          description: Bad Request
           content:
             application/json:
               schema:
@@ -110,20 +125,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AppError"
-        "400":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AppError"
         "403":
           description: User not authorized to perform the action.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AppError"
-        "502":
-          description: Bad Gateway
+        "404":
+          description: Not Found
           content:
             application/json:
               schema:
@@ -134,18 +143,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AppError"
+        "502":
+          description: Bad Gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppError"
         "503":
           description: Service Unavailable
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AppError"
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Map"
       security:
       - Authorization: []
   /liveness_check:
@@ -155,7 +164,18 @@ paths:
       summary: Liveness Check endpoint
       description: For deployment available public `/liveness_check` endpoint.
       operationId: livenessCheck
+      parameters:
+      - name: data-partition-id
+        in: header
+        description: Tenant Id
+        required: true
       responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
         "502":
           description: Bad Gateway
           content:
@@ -168,12 +188,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AppError"
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: string
   /info:
     get:
       tags:
@@ -182,6 +196,11 @@ paths:
       description: "For deployment available public `/info` endpoint, which provides\
         \ build and git related information."
       operationId: info
+      parameters:
+      - name: data-partition-id
+        in: header
+        description: Tenant Id
+        required: true
       responses:
         "200":
           description: Version info.
@@ -191,10 +210,17 @@ paths:
                 $ref: "#/components/schemas/VersionInfo"
 components:
   schemas:
-    Map:
+    Property:
       type: object
       properties:
+        sensitive:
+          type: boolean
+        value:
+          type: object
+    Map:
+      properties:
         < * >:
+          type: object
           $ref: "#/components/schemas/Property"
     AppError:
       type: object
@@ -212,6 +238,17 @@ components:
         name:
           type: string
         version:
+          type: string
+    FeatureFlagState:
+      type: object
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+        partition:
+          type: string
+        source:
           type: string
     VersionInfo:
       type: object
@@ -234,8 +271,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ConnectedOuterService"
+        featureFlagStates:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatureFlagState"
   securitySchemes:
     Authorization:
       type: http
-      scheme: bearer
+      name: Authorization
+      in: header
+      scheme: Bearer
       bearerFormat: Authorization
