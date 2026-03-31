@@ -34,10 +34,20 @@
     <!-- Plugin Versions -->
     <surefire-plugin.version>3.5.4</surefire-plugin.version>
     <jacoco-plugin.version>0.8.12</jacoco-plugin.version>
+    <jackson.version>2.21.1</jackson.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+      <!-- Jackson override: Spring Boot 3.5.9 and other artifacts provides 2.19.4, we need 2.21.1 for GHSA-72hv-8253-57qq -->
+      <!-- Maybe remove this override when Spring Boot BOM updates to Jackson >= 2.21.1 -->
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <!-- Core Azure Library -->
       <dependency>
         <groupId>org.opengroup.osdu</groupId>
