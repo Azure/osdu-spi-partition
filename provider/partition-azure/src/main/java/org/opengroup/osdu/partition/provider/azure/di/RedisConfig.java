@@ -47,15 +47,33 @@ public class RedisConfig {
     @Value("${redis.principal.id:}")
     private String redisPrincipalId;
 
+    @Value("${redis.hostname:#{null}}")
+    private String redisHostname;
+
+    @Value("${redis.backupHostname:#{null}}")
+    private String redisBackupHostname;
+
+    @Value("${azure.is.backup:false}")
+    private boolean isBackup;
+
     @Bean
-    public RedisAzureCache<String, PartitionInfo> partitionServiceCache() {
-        RedisAzureConfiguration redisAzureConfiguration = new RedisAzureConfiguration(database, expiration, port, connectionTimeout, commandTimeout, redisPrincipalId);
-        return new RedisAzureCache<>(String.class, PartitionInfo.class, redisAzureConfiguration);
+    public RedisAzureCache<PartitionInfo> partitionServiceCache() {
+        return new RedisAzureCache<>(PartitionInfo.class, createRedisConfiguration());
     }
 
     @Bean
-    public RedisAzureCache<String, List<String>> partitionListCache() {
-        RedisAzureConfiguration redisAzureConfiguration = new RedisAzureConfiguration(database, expiration, port, connectionTimeout, commandTimeout, redisPrincipalId);
-        return new RedisAzureCache(String.class, List.class, redisAzureConfiguration);
+    public RedisAzureCache<List<String>> partitionListCache() {
+        return (RedisAzureCache<List<String>>) new RedisAzureCache(List.class, createRedisConfiguration());
+    }
+
+    private RedisAzureConfiguration createRedisConfiguration() {
+        return new RedisAzureConfiguration(
+            database,
+            expiration,
+            port,
+            connectionTimeout,
+            commandTimeout,
+            redisPrincipalId,
+            isBackup ? redisBackupHostname : redisHostname);
     }
 }
