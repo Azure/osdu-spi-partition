@@ -21,7 +21,6 @@ Defined in default application property file but possible to override:
 | `PARTITION_PROPERTY_KIND`       | ex `PartitionProperty`  | Kind name to store the properties. | no         | -      |
 | `PARTITION_NAMESPACE`           | ex `partition`          | Namespace for database.            | no         | -      |
 | `SYSTEM_PARTITION_ID`           | ex `syspartition`       | Name of system partition.          | yes        | -      |
-| `SYSTEM_TENANT_API`             | ex `true`               | Enables system API                 | no         | -      |
 | `MANAGEMENT_ENDPOINTS_WEB_BASE` | ex `/`                  | Web base for Actuator              | no         | -      |
 | `MANAGEMENT_SERVER_PORT`        | ex `8081`               | Port for Actuator                  | no         | -      |
 

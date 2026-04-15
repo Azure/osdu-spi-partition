@@ -59,7 +59,7 @@ bootstrap_partition() {
 # Bootstrap system and data partitions
 # Specifying "system" partition for GC installation 
 export SYSTEM_PARTITION_ID="system"
-export SYSTEM_PARTITION_URL="http://${PARTITION_HOST}/api/partition/v1/partition/${SYSTEM_PARTITION_ID}"
+export SYSTEM_PARTITION_URL="http://${PARTITION_HOST}/api/partition/v1/partitions/${SYSTEM_PARTITION_ID}"
 export DATA_PARTITION_ID_VALUE="${SYSTEM_PARTITION_ID}"
 bootstrap_partition "${SYSTEM_PARTITION_ID}" "$(gc_system_partition_data)" "${SYSTEM_PARTITION_URL}"
 
