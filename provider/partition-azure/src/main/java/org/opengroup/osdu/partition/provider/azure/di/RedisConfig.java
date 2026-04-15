@@ -50,12 +50,6 @@ public class RedisConfig {
     @Value("${redis.hostname:#{null}}")
     private String redisHostname;
 
-    @Value("${redis.backupHostname:#{null}}")
-    private String redisBackupHostname;
-
-    @Value("${azure.is.backup:false}")
-    private boolean isBackup;
-
     @Bean
     public RedisAzureCache<PartitionInfo> partitionServiceCache() {
         return new RedisAzureCache<>(PartitionInfo.class, createRedisConfiguration());
@@ -74,6 +68,6 @@ public class RedisConfig {
             connectionTimeout,
             commandTimeout,
             redisPrincipalId,
-            isBackup ? redisBackupHostname : redisHostname);
+            redisHostname);
     }
 }

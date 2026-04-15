@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.partition.provider.azure.di;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.azure.cache.IRedisClientFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,34 +25,47 @@ import org.springframework.test.context.TestPropertySource;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
-@SpringBootTest(classes = RedisConfig.class)
-@TestPropertySource(properties = {
-    "redis.port=6379",
-    "redis.expiration=3600",
-    "redis.database=0",
-    "redis.connection.timeout=2000",
-    "redis.command.timeout=2000",
-    "redis.principal.id=test-client-id"
-})
 public class RedisConfigTest {
 
-    @MockBean
-    private IRedisClientFactory redisClientFactory;
+    @Nested
+    @SpringBootTest(classes = RedisConfig.class)
+    @TestPropertySource(properties = {
+        "redis.port=6379",
+        "redis.expiration=3600",
+        "redis.database=0",
+        "redis.connection.timeout=2000",
+        "redis.command.timeout=2000"
+    })
+    class BaseTest {
+        @MockBean
+        IRedisClientFactory redisClientFactory;
+        @Autowired
+        RedisConfig redisConfig;
 
-    @Autowired
-    private RedisConfig redisConfig;
+        @Test
+        void testBothCachesAreIndependentBeans() {
+            var partitionServiceCache = redisConfig.partitionServiceCache();
+            var partitionListCache = redisConfig.partitionListCache();
 
-    @Test
-    public void testBothCachesAreIndependentBeans() {
-        var partitionServiceCache = redisConfig.partitionServiceCache();
-        var partitionListCache = redisConfig.partitionListCache();
-        
-        assertNotNull(partitionServiceCache, "partitionServiceCache should not be null");
-        assertNotNull(partitionListCache, "partitionListCache should not be null");
-        assertNotSame(
-            partitionServiceCache, 
-            partitionListCache,
-            "partitionServiceCache and partitionListCache should be different bean instances"
-        );
+            assertNotNull(partitionServiceCache, "partitionServiceCache should not be null");
+            assertNotNull(partitionListCache, "partitionListCache should not be null");
+            assertNotSame(
+                partitionServiceCache,
+                partitionListCache,
+                "partitionServiceCache and partitionListCache should be different bean instances"
+            );
+        }
     }
+
+    @Nested
+    @TestPropertySource(properties = {"redis.principal.id=test-client-id", "redis.hostname=test-redis-host"})
+    class WithPrincipalIdAndHostname extends BaseTest {}
+
+    @Nested
+    @TestPropertySource(properties = {"redis.principal.id=test-client-id"})
+    class WithPrincipalIdOnly extends BaseTest {}
+
+    @Nested
+    @TestPropertySource(properties = {"redis.hostname=test-redis-host"})
+    class WithHostnameOnly extends BaseTest {}
 }
