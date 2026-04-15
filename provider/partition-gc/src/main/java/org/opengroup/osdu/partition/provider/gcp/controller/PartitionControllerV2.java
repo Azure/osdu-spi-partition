@@ -1,6 +1,6 @@
 /*
- * Copyright 2020-2024 Google LLC
- * Copyright 2020-2024 EPAM Systems, Inc
+ * Copyright 2020-2025 Google LLC
+ * Copyright 2020-2025 EPAM Systems, Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,24 @@
 
 package org.opengroup.osdu.partition.provider.gcp.controller;
 
-import static org.opengroup.osdu.partition.provider.gcp.config.SystemApiConfiguration.PARTITION_SYSTEM_TENANT_API;
-
 import java.util.List;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.partition.controller.PartitionController;
 import org.opengroup.osdu.partition.model.PartitionInfo;
-import org.opengroup.osdu.partition.provider.gcp.config.SystemApiConfiguration;
+import org.opengroup.osdu.partition.provider.gcp.config.SystemTenantConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@ConditionalOnProperty(name = PARTITION_SYSTEM_TENANT_API, havingValue = "true")
 public class PartitionControllerV2 extends PartitionController {
 
   private static final String NOT_ALLOWED = "Not allowed.";
-  private static final String SYSTEM_TENANT_ERROR_MESSAGE = "The system tenant should be managed via system tenant API.";
+  private static final String SYSTEM_TENANT_ERROR_MESSAGE = "The system tenant should not be managed via API.";
+
   @Autowired
-  private SystemApiConfiguration properties;
+  private SystemTenantConfiguration properties;
 
   @Override
   public ResponseEntity create(String partitionId, PartitionInfo partitionInfo) {
@@ -66,12 +63,8 @@ public class PartitionControllerV2 extends PartitionController {
   @Override
   public List<String> list() {
     List<String> partitions = super.list();
-    if (properties.isSystemPartitionListableAndResourceReady()) {
-      return partitions;
-    } else {
-      return partitions.stream()
-          .filter(partition -> !partition.equalsIgnoreCase(properties.getSystemPartitionId()))
-          .toList();
-    }
+    return partitions.stream()
+        .filter(partition -> !partition.equalsIgnoreCase(properties.getSystemPartitionId()))
+        .toList();
   }
 }

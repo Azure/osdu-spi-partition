@@ -28,6 +28,7 @@ import org.springframework.web.context.annotation.RequestScope;
 @RequestScope
 @ConditionalOnProperty(name = "environment", havingValue = "gcp")
 public class GcpAuthorizationService implements IAuthorizationService {
+
   @Override
   public boolean isDomainAdminServiceAccount() {
     log.debug("Authorization/Authentication is on an infrastructure level.");
