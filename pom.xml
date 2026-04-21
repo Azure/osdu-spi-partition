@@ -32,9 +32,10 @@
     <os-core-common.version>5.4.1</os-core-common.version>
 
     <!-- Spring Versions-->
-    <spring-boot.version>3.5.9</spring-boot.version>
-    <spring-security.version>6.5.7</spring-security.version>
-    <spring-framework.version>6.2.15</spring-framework.version>
+    <spring-boot.version>3.5.12</spring-boot.version>
+    <spring-security.version>6.5.9</spring-security.version>
+    <spring-framework.version>6.2.17</spring-framework.version>
+    <tomcat.version>10.1.54</tomcat.version>
 
     <!-- Project Versions-->
     <lombok.version>1.18.42</lombok.version>
@@ -63,6 +64,23 @@
            spring-framework-bom third as it provides core dependencies that can be safely overridden by the security BOM
            os-core-common last as it provides the default dependencies for the project.dependency>
       -->
+
+      <!-- Tomcat override: BOM import does not propagate tomcat.version -->
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-core</artifactId>
+        <version>${tomcat.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-el</artifactId>
+        <version>${tomcat.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-websocket</artifactId>
+        <version>${tomcat.version}</version>
+      </dependency>
 
       <!-- BOM Section Start-->
       <dependency>
