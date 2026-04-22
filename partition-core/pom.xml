@@ -40,7 +40,7 @@
 		<assertj_core_version>3.27.6</assertj_core_version>
 		
 		<!-- Plugin Versions -->
-		<maven_surefire_plugin_version>3.5.4</maven_surefire_plugin_version>
+		<maven_surefire_plugin_version>3.5.5</maven_surefire_plugin_version>
 		<maven_failsafe_plugin_version>3.5.4</maven_failsafe_plugin_version>
 		<jackson.version>2.21.1</jackson.version>
 	</properties>
