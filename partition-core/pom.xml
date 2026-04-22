@@ -37,7 +37,7 @@
 		<!-- Test Scoped Versions (updated for compatibility) -->
 		<mockito.core.version>3.4.0</mockito.core.version>
 		<mockito.inline.version>3.12.4</mockito.inline.version>
-		<assertj_core_version>3.27.6</assertj_core_version>
+		<assertj_core_version>3.27.7</assertj_core_version>
 		
 		<!-- Plugin Versions -->
 		<maven_surefire_plugin_version>3.5.4</maven_surefire_plugin_version>
