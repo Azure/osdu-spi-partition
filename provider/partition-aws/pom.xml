@@ -35,7 +35,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven_surefire_plugin_version>3.0.0-M4</maven_surefire_plugin_version>
         <spring-core.version>6.2.11</spring-core.version>
-        <netty.version>4.1.124.Final</netty.version>
+        <netty.version>4.1.132.Final</netty.version>
         <tomcat.version>10.1.48</tomcat.version>
         <json-smart.version>2.5.2</json-smart.version>
     </properties>
