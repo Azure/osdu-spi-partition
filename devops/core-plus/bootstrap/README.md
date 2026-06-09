@@ -2,43 +2,50 @@
 
 ## Overview
 
-This folder contains a set of Bash scripts designed to bootstrap and configure data partitions. These scripts are used to initialize the necessary settings and properties for system and additional data partitions in a given environment.
+This folder contains Bash scripts and a Dockerfile to bootstrap and configure a data partition. The scripts initialize partition properties by calling the Partition API, creating or updating the partition as needed.
 
 ## Key Environment Variables
 
-| Environment Variable        | Description                                      |
-| --------------------------- | ------------------------------------------------ |
-| `PARTITION_HOST`            | Host for the partition API.                      |
-| `DATA_PARTITION_ID`         | Identifier for the data partition.               |
-| `BUCKET_PREFIX`             | Prefix for bucket names used in the partition.   |
-| `PARTITION_SUFFIX`          | Suffix used for partition-specific properties.   |
-| `SERVICE_ACCOUNT`           | Service account                                  |
-| `MINIO_ENDPOINT`            | Endpoint for the MinIO service.                  |
-| `MINIO_EXTERNAL_ENDPOINT`   | External endpoint for accessing MinIO.           |
-| `MINIO_IGNORE_CERT_CHECK`   | Flag to ignore SSL certificate checks for MinIO. |
-| `MINIO_UI_ENDPOINT`         | Endpoint for the MinIO user interface.           |
-| `INDEXER_AUGMENTER_ENABLED` | Flag to enable or disable the index augmenter.   |
+| Environment Variable              | Description                                                |
+| --------------------------------- | ---------------------------------------------------------- |
+| `PARTITION_HOST`                  | Host for the partition API.                                |
+| `DATA_PARTITION_ID`               | Identifier for the data partition.                         |
+| `BUCKET_PREFIX`                   | Prefix for bucket names used in the partition.             |
+| `PARTITION_SUFFIX`                | Suffix used for partition-specific secret references.      |
+| `SERVICE_ACCOUNT`                 | Service account associated with the partition.             |
+| `SECRET_SERVICE_NAMESPACE`        | Kubernetes namespace for the secret service.               |
+| `MINIO_ENDPOINT`                  | Endpoint for the MinIO service.                            |
+| `MINIO_EXTERNAL_ENDPOINT`         | External endpoint for accessing MinIO.                     |
+| `MINIO_IGNORE_CERT_CHECK`         | Flag to ignore SSL certificate checks for MinIO.           |
+| `MINIO_UI_ENDPOINT`               | Endpoint for the MinIO user interface.                     |
+| `ELASTIC_HTTPS`                   | Flag to enable HTTPS for Elasticsearch connections.        |
+| `INDEXER_AUGMENTER_ENABLED`       | Flag to enable or disable the index augmenter.             |
+| `EDS_ENABLED`                     | Feature flag to enable or disable EDS.                     |
+| `POLICY_SERVICE_ENABLED`          | Feature flag to enable or disable OPA/policy enforcement.  |
+| `AUTOCOMPLETE_ENABLED`            | Feature flag to enable or disable autocomplete.            |
+| `AS_INGESTED_COORDINATES_ENABLED` | Feature flag to enable or disable as-ingested coordinates. |
+| `KEYWORD_LOWER_ENABLED`           | Feature flag to enable or disable lowercase keywords.      |
+| `BAG_OF_WORDS_ENABLED`            | Feature flag to enable or disable bag-of-words indexing.   |
+| `COLLABORATIONS_ENABLED`          | Feature flag to enable or disable collaborations.          |
 
 ## Scripts
 
 1. **bootstrap_partition.sh**
 2. **data_core.sh**
-3. **helpers.sh**
 
 ### bootstrap_partition.sh
 
-This script is responsible for bootstrapping a data partition. It performs the following tasks:
+This script bootstraps the data partition. It performs the following tasks:
 
-- Sources helper functions from `helpers.sh` and core data functions from `data_core.sh`.
-- Defines the `bootstrap_partition` function to bootstrap a partition by making HTTP POST and PATCH requests to a specified URL.
-- Exports environment variables needed for system and additional partitions.
-- Calls the `bootstrap_partition` function with appropriate data for system and additional partitions.
-- Creates a temporary file to signal that the bootstrap process is complete.
+- Sources core data functions from `data_core.sh`.
+- Defines the `bootstrap_partition` function that makes an HTTP POST request to create the partition; if the partition already exists (HTTP 409), it falls back to a PATCH request to update its properties.
+- Calls `bootstrap_partition` with the JSON payload produced by `core_partition_data`.
+- Creates `/tmp/bootstrap_ready` to signal that the bootstrap process is complete.
 
 ### data_core.sh
 
-This script contains functions to generate JSON data for core system and additional partitions. These functions output JSON structures with various properties required for the partitions.
+This script defines the `core_partition_data` function, which outputs the full JSON payload for the partition. The payload includes properties for storage buckets, PostgreSQL, MinIO, SeaweedFS, RabbitMQ, Elasticsearch, Entitlements, and feature flags.
 
-### helpers.sh
+## Docker
 
-This script provides utility functions to support the bootstrapping process.
+The `Dockerfile` builds an Alpine-based image that runs `bootstrap_partition.sh` on startup and then sleeps to keep the container alive. Required environment variables must be supplied at runtime (e.g. via Kubernetes environment or Docker `--env`/`--env-file`).
