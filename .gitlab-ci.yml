@@ -15,10 +15,6 @@ variables:
   AZURE_TEST_SUBDIR: testing/partition-test-azure
   SERVICE_JAVA_VERSION: "17"
 
-  IBM_BUILD_SUBDIR: provider/partition-ibm
-  IBM_INT_TEST_SUBDIR: testing/partition-test-ibm
-  IBM_HELM_CONFIG_PATH: devops/ibm/ibm-partition-config
-  IBM_HELM_DEPLOY_PATH: devops/ibm/ibm-partition-deploy
   ACCEPTANCE_TEST_DIR: "partition-acceptance-test"
 
 include:
@@ -50,9 +46,6 @@ include:
     file: "cloud-providers/azure.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/ibm.yml"
-
-  - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/gc-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
@@ -66,9 +59,6 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/gc-one-pipeline.yml"
-
-  - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/ibm-one-pipeline.yml"
 
   - local: "devops/gc-quarkus/pipeline/override-stages.yml"
 

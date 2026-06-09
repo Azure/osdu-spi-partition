@@ -35,6 +35,14 @@ core_partition_data() {
       "sensitive": false,
       "value": "[${DATA_PARTITION_ID_VALUE},${DATA_PARTITION_ID_VALUE}]"
     },
+    "file.persistent.location": {
+      "sensitive": false,
+      "value": "${BUCKET_PREFIX}-${DATA_PARTITION_ID_VALUE}-persistent-area"
+    },
+    "file.staging.location": {
+      "sensitive": false,
+      "value": "${BUCKET_PREFIX}-${DATA_PARTITION_ID_VALUE}-staging-area"
+    },
     "osm.postgres.datasource.url": {
       "sensitive": true,
       "value": "POSTGRES_DATASOURCE_URL${PARTITION_SUFFIX}"
@@ -46,6 +54,26 @@ core_partition_data() {
     "osm.postgres.datasource.password": {
       "sensitive": true,
       "value": "POSTGRES_DB_PASSWORD${PARTITION_SUFFIX}"
+    },
+    "obm.s3.endpoint": {
+      "sensitive": true,
+      "value": "SEAWEEDFS_ENDPOINT_${DATA_PARTITION_ID_UPPER}"
+    },
+    "obm.s3.external.endpoint": {
+      "sensitive": true,
+      "value": "SEAWEEDFS_EXTERNAL_ENDPOINT_${DATA_PARTITION_ID_UPPER}"
+    },
+    "obm.s3.accessKey": {
+      "sensitive": true,
+      "value": "SEAWEEDFS_ACCESS_KEY_${DATA_PARTITION_ID_UPPER}"
+    },
+    "obm.s3.secretKey": {
+      "sensitive": true,
+      "value": "SEAWEEDFS_SECRET_KEY_${DATA_PARTITION_ID_UPPER}"
+    },
+      "obm.s3.region": {
+    "sensitive": false,
+    "value": "us-east-1"
     },
     "obm.minio.endpoint": {
       "sensitive": false,

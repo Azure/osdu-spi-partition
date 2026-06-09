@@ -105,14 +105,14 @@ First you need to set variables in **values.yaml** file using any code editor. S
 
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
-**data.logLevel** | logging level | string | INFO | yes
+**data.logLevel** | logging level | string | ERROR | yes
+**data.secretAdminNamespace** | namespace suffix for the secret admin service, combined with release namespace as `<namespace>-<value>` | string | secret-admin | yes
 **data.partitionSuffix** | suffix for partition secret values | string | _SYSTEM | yes
 **data.datafierSa** | datafier service account | string | datafier | yes
 **data.bucketPrefix** | minio bucket name prefix | string | refi | only in case of Reference installation when _onPremEnabled_ is set to "_true_"
 **data.minioExternalEndpoint** | api url for external minio, if external minio is configured - this value will be set for MINIO_ENDPOINT and MINIO_EXTERNAL_ENDPOINT in bootstrap configmap | string | - | no
 **data.minioIgnoreCertCheck** | whether minio should ignore TLS certs validity check, set to true if external minio is protected by self-signed certificates | string | false | no
 **data.minioUIEndpoint** | UI endpoint for gathering minio versions | string | `http://minio:9001` | yes
-**data.indexerAugmenterEnabled** | enable indexer Augmenter | string | false | no
 **data.elasticHttps** | use https(true) or http(false) in interservice communication (search/indexer <-> elasticsearch)| bool | "" | yes
 
 ### Deployment variables
@@ -127,6 +127,7 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **data.imagePullPolicy** | when to pull the image | string | IfNotPresent | yes
 **data.image** | path to the image in a registry | string | - | yes
 **data.bootstrapImage** | name of the bootstrap image | string | - | yes
+**conf.replicas** | number of pod replicas | integer | 1 | yes
 
 ### Configuration variables
 
@@ -149,6 +150,19 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **istio.bootstrapProxyCPU** | CPU request for Envoy sidecars | string | 5m | yes
 **istio.bootstrapProxyCPULimit** | CPU limit for Envoy sidecars | string | 100m | yes
 **istio.sidecarInject** | whether Istio sidecar will be injected. Setting to "false" reduces security, because disables authorization policy. | boolean | true | yes
+
+### Feature flag variables
+
+| Name | Description | Type | Default |Required |
+|------|-------------|------|---------|---------|
+**data.indexerAugmenterEnabled** | enable indexer Augmenter | string | false | no
+**data.asIngestedCoordinatesEnabled** | enable as-ingested coordinates feature | string | false | no
+**data.keywordLowerEnabled** | enable lower-case keyword search | string | false | no
+**data.bagOfWordsEnabled** | enable bag-of-words search feature | string | false | no
+**data.collaborationsEnabled** | enable collaborations feature | string | true | no
+**data.autocompleteEnabled** | enable autocomplete search feature | string | false | no
+**data.policyServiceEnabled** | enable policy service integration | string | false | no
+**data.edsEnabled** | enable EDS (External Data Sources) feature | string | false | no
 
 ### Install the helm chart
 
