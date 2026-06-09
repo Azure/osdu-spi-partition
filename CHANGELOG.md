@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0](https://github.com/Azure/osdu-spi-partition/compare/v1.1.0...v1.2.0) (2026-06-09)
+
+
+### ✨ Features
+
+* Sync upstream changes from ([666e35b](https://github.com/Azure/osdu-spi-partition/commit/666e35bb8fecc6314109bfd3eae1d93feffc19a6))
+
+
+### 🔧 Miscellaneous
+
+* **ci:** Remove IBM jobs from pipeline ([7d5f5e8](https://github.com/Azure/osdu-spi-partition/commit/7d5f5e8f05ce1c1090b1dbccfee0277651a307c4))
+* **ci:** Remove IBM jobs from pipeline ([a3fb144](https://github.com/Azure/osdu-spi-partition/commit/a3fb144b90a6216d2a91dcfb297e0f84f6e84afc))
+* Sync template updates ([68fad86](https://github.com/Azure/osdu-spi-partition/commit/68fad86d841e5840c988cef16e241445d6d55f87))
+
 ## [1.1.0](https://github.com/Azure/osdu-spi-partition/compare/v1.0.2...v1.1.0) (2026-04-22)
 
 
