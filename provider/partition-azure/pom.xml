@@ -19,28 +19,36 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>partition-azure</artifactId>
+  <version>0.31.0-SNAPSHOT</version>
   <description>Partition service on Azure</description>
   <packaging>jar</packaging>
 
   <parent>
     <artifactId>partition</artifactId>
     <groupId>org.opengroup.osdu</groupId>
-    <version>0.30.0-SNAPSHOT</version>
+    <version>0.31.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
   <properties>
-    <core-lib-azure.version>2.5.5</core-lib-azure.version>
+    <core-lib-azure.version>3.0.1</core-lib-azure.version>
     <!-- Plugin Versions -->
     <surefire-plugin.version>3.5.4</surefire-plugin.version>
     <jacoco-plugin.version>0.8.12</jacoco-plugin.version>
-    <jackson.version>2.21.1</jackson.version>
+    <jackson.version>2.21.2</jackson.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
-      <!-- Jackson override: Spring Boot 3.5.9 and other artifacts provides 2.19.4, we need 2.21.1 for GHSA-72hv-8253-57qq -->
-      <!-- Maybe remove this override when Spring Boot BOM updates to Jackson >= 2.21.1 -->
+            <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+<!-- Jackson override: Spring Boot 3.5.13 and other artifacts provide an older Jackson; we need 2.21.2 for GHSA-72hv-8253-57qq -->
+      <!-- Maybe remove this override when Spring Boot BOM updates to Jackson >= 2.21.2 -->
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
@@ -76,6 +84,16 @@
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>core-lib-azure</artifactId>
       <version>${core-lib-azure.version}</version>
+    </dependency>
+    <!--
+        os-core-common 7.0.0 declares lettuce-core as provided (not propagated).
+        core-lib-azure's IRedisClientFactory uses lettuce types in its signature,
+        so Mockito mocking and runtime instantiation require lettuce-core on the classpath.
+    -->
+    <dependency>
+      <groupId>io.lettuce</groupId>
+      <artifactId>lettuce-core</artifactId>
+      <version>${lettuce.version}</version>
     </dependency>
 
     <!-- Spring Dependencies -->

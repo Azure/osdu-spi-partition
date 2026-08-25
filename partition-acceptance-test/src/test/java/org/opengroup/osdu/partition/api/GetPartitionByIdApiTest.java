@@ -14,62 +14,39 @@
 
 package org.opengroup.osdu.partition.api;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.opengroup.osdu.partition.api.descriptor.GetPartitionDescriptor;
-import org.opengroup.osdu.partition.util.BaseTestTemplate;
-import org.opengroup.osdu.partition.util.Config;
-import org.opengroup.osdu.partition.util.TestTokenUtils;
-import org.opengroup.osdu.partition.util.TestUtils;
-import org.springframework.http.HttpStatus;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.Method;
+import org.junit.jupiter.api.Test;
+import org.opengroup.osdu.core.test.client.ClientException;
+import org.opengroup.osdu.core.test.client.HttpResponse;
+import org.opengroup.osdu.core.test.client.model.partition.PartitionInfo;
+import org.opengroup.osdu.partition.util.BasePartitionAcceptanceTests;
 
-public final class GetPartitionByIdApiTest extends BaseTestTemplate {
+public final class GetPartitionByIdApiTest extends BasePartitionAcceptanceTests {
 
-    private String partitionId = Config.Instance().osduTenant;
+    @Test
+    public void read_partition() {
+        HttpResponse<PartitionInfo> response = partitionClient.getPartition(servicesConfig.getDataPartitionId());
 
-    @Override
-    @Before
-    public void setup() {
-        this.testUtils = new TestTokenUtils();
-    }
-
-    @Override
-    @After
-    public void tearDown() {
-        this.testUtils = null;
-    }
-
-    @Override
-    protected String getId() {
-        return partitionId;
-    }
-
-    public GetPartitionByIdApiTest() {
-        super(new GetPartitionDescriptor());
-    }
-
-    @Override
-    protected int expectedOkResponseCode() {
-        return HttpStatus.OK.value();
+        assertNotNull(response.body());
+        assertEquals(HttpStatus.SC_OK, response.statusCode());
     }
 
     @Test
-    public void read_partition() throws Exception {
-        CloseableHttpResponse response = this.descriptor.run(this.getId(), this.testUtils.getAccessToken());
-        Object partitionProperties = TestUtils.parseResponse(response);
-        
-        assertNotNull(partitionProperties);
-        assertEquals(HttpStatus.OK.value(), response.getCode());
+    public void read_not_existing_partition() {
+        ClientException ex = assertThrows(ClientException.class,
+            () -> partitionClient.getPartition("not-existing-partition"));
+
+        assertEquals(HttpStatus.SC_NOT_FOUND, ex.getStatusCode());
     }
 
     @Test
-    public void read_not_existing_partition() throws Exception {
-        CloseableHttpResponse response = this.descriptor.run("not-existing-partition", this.testUtils.getAccessToken());
-        assertEquals(HttpStatus.NOT_FOUND.value(), response.getCode());
+    public void should_return400_when_makingHttpRequestWithoutValidUrl() throws Exception {
+        String invalidPath = "partitions/" + servicesConfig.getDataPartitionId() + "//";
+        assertEquals(HttpStatus.SC_BAD_REQUEST, send(invalidPath, Method.GET).statusCode());
     }
 }

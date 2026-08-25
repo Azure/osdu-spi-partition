@@ -16,11 +16,8 @@
 
 package org.opengroup.osdu.partition.provider.aws.security;
 
-import java.text.ParseException;
 import java.util.Map;
 
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import org.opengroup.osdu.core.aws.v2.entitlements.RequestKeys;
 import org.opengroup.osdu.core.aws.v2.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.core.aws.v2.ssm.K8sParameterNotFoundException;

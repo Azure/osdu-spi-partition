@@ -7,11 +7,12 @@
   <parent>
     <artifactId>partition</artifactId>
     <groupId>org.opengroup.osdu</groupId>
-    <version>0.30.0-SNAPSHOT</version>
+    <version>0.31.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
   <artifactId>partition-gc</artifactId>
+  <version>0.31.0-SNAPSHOT</version>
   <description>Partition service on Google Cloud</description>
   <packaging>jar</packaging>
 
@@ -38,7 +39,7 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>partition-core-plus</artifactId>
-      <version>0.30.0-SNAPSHOT</version>
+      <version>0.31.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback.contrib</groupId>
