@@ -21,37 +21,21 @@
     <parent>
         <artifactId>partition</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.30.0-SNAPSHOT</version>
+        <version>0.31.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>partition-aws</artifactId>
+    <version>0.31.0-SNAPSHOT</version>
     <description>Partition service on AWS</description>
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven_surefire_plugin_version>3.0.0-M4</maven_surefire_plugin_version>
-        <spring-core.version>6.2.11</spring-core.version>
-        <netty.version>4.1.124.Final</netty.version>
-        <tomcat.version>10.1.48</tomcat.version>
-        <json-smart.version>2.5.2</json-smart.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-core</artifactId>
-                <version>${spring-core.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>2.15.2</version>
-            </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-handler</artifactId>
@@ -67,16 +51,6 @@
                 <artifactId>netty-common</artifactId>
                 <version>${netty.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-core</artifactId>
-                <version>${tomcat.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.minidev</groupId>
-                <artifactId>json-smart</artifactId>
-                <version>${json-smart.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -85,7 +59,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>7.0.0</version>
+            <version>8.1.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework.security</groupId>
@@ -93,10 +67,17 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- os-core-common 7.x declares lettuce-core as provided; declare it explicitly
+             so os-core-lib-aws's CacheFactory.getRedisCache can resolve io.lettuce.core.RedisException -->
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+            <version>${lettuce.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>partition-core</artifactId>
-            <version>0.30.0-SNAPSHOT</version>
+            <version>0.31.0-SNAPSHOT</version>
         </dependency>
 
         <!-- Third party Apache 2.0 license packages -->
@@ -109,7 +90,6 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.26</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
@@ -209,12 +189,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven_surefire_plugin_version}</version>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.10</version>
                 <executions>
                     <execution>
                         <goals>

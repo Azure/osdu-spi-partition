@@ -14,20 +14,20 @@
 
 package org.opengroup.osdu.partition.model;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PropertyTest {
 
     @Test
     public void defaultSensitive_shouldBeFalse() {
         Property property = new Property();
-        assertFalse("Default sensitive should be false", property.isSensitive());
-        assertNull("Default value should be null", property.getValue());
+        assertFalse(property.isSensitive(), "Default sensitive should be false");
+        assertNull(property.getValue(), "Default value should be null");
     }
 
     @Test

@@ -20,80 +20,28 @@
 
     <groupId>org.opengroup.osdu.partition</groupId>
     <artifactId>partition-acceptance-test</artifactId>
-    <version>0.30.0-SNAPSHOT</version>
+    <version>0.31.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
         <java.version>17</java.version>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <allure.version>2.31.0</allure.version>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.qameta.allure</groupId>
-                <artifactId>allure-bom</artifactId>
-                <version>${allure.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
+        <dependency>
+            <groupId>org.opengroup.osdu</groupId>
+            <artifactId>os-core-test</artifactId>
+            <version>0.2.8</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.24</version>
+            <version>1.18.42</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-client</artifactId>
-            <version>1.19.4</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.10.1</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.5.6</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-            <version>6.2.12</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-            <version>5.2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.nimbusds</groupId>
-            <artifactId>oauth2-oidc-sdk</artifactId>
-            <version>9.15</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.15.2</version>
-        </dependency>
-        <dependency>
-            <groupId>io.qameta.allure</groupId>
-            <artifactId>allure-junit4</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
@@ -101,8 +49,13 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
+                <version>3.5.4</version>
                 <configuration>
                     <properties>
                         <property>
@@ -132,4 +85,23 @@
             <url>${publish.snapshots.url}</url>
         </snapshotRepository>
     </distributionManagement>
+
+    <profiles>
+        <profile>
+            <id>Default</id>
+            <activation>
+                <property>
+                    <name>!repo.releases.id</name>
+                </property>
+            </activation>
+            <properties>
+                <repo.releases.id>community-maven-repo</repo.releases.id>
+                <publish.snapshots.id>community-maven-via-job-token</publish.snapshots.id>
+                <publish.releases.id>community-maven-via-job-token</publish.releases.id>
+                <repo.releases.url>https://community.opengroup.org/api/v4/groups/17/-/packages/maven</repo.releases.url>
+                <publish.snapshots.url>https://community.opengroup.org/api/v4/projects/221/packages/maven</publish.snapshots.url>
+                <publish.releases.url>https://community.opengroup.org/api/v4/projects/221/packages/maven</publish.releases.url>
+            </properties>
+        </profile>
+    </profiles>
 </project>

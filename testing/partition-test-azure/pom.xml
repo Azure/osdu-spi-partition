@@ -20,13 +20,13 @@
     <parent>
         <groupId>org.opengroup.osdu</groupId>
         <artifactId>os-partition-testing</artifactId>
-        <version>0.30.0-SNAPSHOT</version>
+        <version>0.31.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <groupId>org.opengroup.osdu.partition</groupId>
     <artifactId>partition-test-azure</artifactId>
-    <version>0.30.0-SNAPSHOT</version>
+    <version>0.31.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -37,7 +37,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.partition</groupId>
             <artifactId>partition-test-core</artifactId>
-            <version>0.30.0-SNAPSHOT</version>
+            <version>0.31.0-SNAPSHOT</version>
         </dependency>
         <!-- provider dependencies -->
         <dependency>

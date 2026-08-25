@@ -1,32 +1,27 @@
 # Partition Bootstrapping Script
 
+> **Part of:** [Core-Plus Deployment](../README.md) - runs as one-time initialization job
+
+---
+
 ## Overview
 
 This folder contains Bash scripts and a Dockerfile to bootstrap and configure a data partition. The scripts initialize partition properties by calling the Partition API, creating or updating the partition as needed.
 
-## Key Environment Variables
+## Environment Variables
 
-| Environment Variable              | Description                                                |
-| --------------------------------- | ---------------------------------------------------------- |
-| `PARTITION_HOST`                  | Host for the partition API.                                |
-| `DATA_PARTITION_ID`               | Identifier for the data partition.                         |
-| `BUCKET_PREFIX`                   | Prefix for bucket names used in the partition.             |
-| `PARTITION_SUFFIX`                | Suffix used for partition-specific secret references.      |
-| `SERVICE_ACCOUNT`                 | Service account associated with the partition.             |
-| `SECRET_SERVICE_NAMESPACE`        | Kubernetes namespace for the secret service.               |
-| `MINIO_ENDPOINT`                  | Endpoint for the MinIO service.                            |
-| `MINIO_EXTERNAL_ENDPOINT`         | External endpoint for accessing MinIO.                     |
-| `MINIO_IGNORE_CERT_CHECK`         | Flag to ignore SSL certificate checks for MinIO.           |
-| `MINIO_UI_ENDPOINT`               | Endpoint for the MinIO user interface.                     |
-| `ELASTIC_HTTPS`                   | Flag to enable HTTPS for Elasticsearch connections.        |
-| `INDEXER_AUGMENTER_ENABLED`       | Flag to enable or disable the index augmenter.             |
-| `EDS_ENABLED`                     | Feature flag to enable or disable EDS.                     |
-| `POLICY_SERVICE_ENABLED`          | Feature flag to enable or disable OPA/policy enforcement.  |
-| `AUTOCOMPLETE_ENABLED`            | Feature flag to enable or disable autocomplete.            |
-| `AS_INGESTED_COORDINATES_ENABLED` | Feature flag to enable or disable as-ingested coordinates. |
-| `KEYWORD_LOWER_ENABLED`           | Feature flag to enable or disable lowercase keywords.      |
-| `BAG_OF_WORDS_ENABLED`            | Feature flag to enable or disable bag-of-words indexing.   |
-| `COLLABORATIONS_ENABLED`          | Feature flag to enable or disable collaborations.          |
+### Variables for bootstrap_partition.sh
+
+| Environment Variable | Description                     |
+| -------------------- | ------------------------------- |
+| `PARTITION_HOST`     | Host for the partition API.     |
+| `DATA_PARTITION_ID`  | Identifier for the data partition. |
+
+### Variables for data_core.sh
+
+The `data_core.sh` script uses additional environment variables to build the partition configuration JSON payload.
+
+For the complete list of variables and their configuration, see the **Bootstrap Configuration** section in [Deploy README](../deploy/README.md).
 
 ## Scripts
 
@@ -49,3 +44,15 @@ This script defines the `core_partition_data` function, which outputs the full J
 ## Docker
 
 The `Dockerfile` builds an Alpine-based image that runs `bootstrap_partition.sh` on startup and then sleeps to keep the container alive. Required environment variables must be supplied at runtime (e.g. via Kubernetes environment or Docker `--env`/`--env-file`).
+
+---
+
+## Deployment Integration
+
+This bootstrap runs automatically via Helm deployment:
+- **Image:** Specified in `values.yaml` → `data.bootstrapImage`
+- **ConfigMap:** `partition-config-bootstrap` (see [template](../deploy/templates/configmap-bootstrap.yaml))
+- **Service Account:** `partition-bootstrap`
+- **Readiness:** Checks `/tmp/bootstrap_ready` file
+
+See [Deploy README](../deploy/README.md) for installation.

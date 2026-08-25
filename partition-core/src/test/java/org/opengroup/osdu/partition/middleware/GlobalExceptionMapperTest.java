@@ -18,11 +18,9 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.google.gson.Gson;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.exception.NotFoundException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -36,12 +34,17 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ValidationException;
 import java.util.HashSet;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class GlobalExceptionMapperTest {
 
     private static final Gson gson = new Gson();
@@ -77,7 +80,6 @@ public class GlobalExceptionMapperTest {
         assertEquals(302, response.getStatusCodeValue());
         assertEquals(gson.toJson("any message"), response.getBody());
     }
-
 
     @Test
     public void should_use404ValueInResponse_When_NotFoundExceptionIsHandledByGlobalExceptionMapper() {
@@ -165,7 +167,6 @@ public class GlobalExceptionMapperTest {
         sut.handleAppException(appException);
         verify(this.log).error("An unknown error has occurred.", appException);
     }
-
 
     @Test
     public void should_logWarningMessage_when_statusCodeSmallerThan499() {

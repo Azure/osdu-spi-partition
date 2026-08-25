@@ -60,14 +60,14 @@ public class PartitionServiceImpl implements IPartitionService {
 
     @Override
     public PartitionInfo createPartition(String partitionId, PartitionInfo partitionInfo) {
-        if (partitionServiceCache.get(partitionId) != null || tableStore.partitionExists(partitionId)) {
+        if (safeGet(partitionServiceCache, partitionId) != null || tableStore.partitionExists(partitionId)) {
             throw new AppException(HttpStatus.SC_CONFLICT, "partition exist", "Partition with same id exist");
         }
 
         tableStore.addPartition(partitionId, partitionInfo);
 
-        partitionServiceCache.put(partitionId, partitionInfo);
-        partitionListCache.clearAll();
+        safePut(partitionServiceCache, partitionId, partitionInfo);
+        safeDelete(partitionListCache, PARTITION_LIST_KEY);
 
         return partitionInfo;
     }
@@ -88,7 +88,7 @@ public class PartitionServiceImpl implements IPartitionService {
                 .orElse(null);
 
         if(pi != null) {
-            partitionServiceCache.put(partitionId, pi);
+            safePut(partitionServiceCache, partitionId, pi);
         }
 
         return pi;
@@ -97,7 +97,7 @@ public class PartitionServiceImpl implements IPartitionService {
     @Override
     public PartitionInfo getPartition(String partitionId) {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        PartitionInfo pi = partitionServiceCache.get(partitionId);
+        PartitionInfo pi = safeGet(partitionServiceCache, partitionId);
         stopwatch.stop();
         log.info(String.format("Total time taken to fetch from PartitionCache: %d", stopwatch.elapsed(TimeUnit.MILLISECONDS)));
 
@@ -115,7 +115,7 @@ public class PartitionServiceImpl implements IPartitionService {
             pi = PartitionInfo.builder().properties(out).build();
 
             if (pi != null) {
-                partitionServiceCache.put(partitionId, pi);
+                safePut(partitionServiceCache, partitionId, pi);
             }
         }
 
@@ -132,17 +132,15 @@ public class PartitionServiceImpl implements IPartitionService {
         }
 
         tableStore.deletePartition(partitionId);
-
-        if (partitionServiceCache.get(partitionId) != null) {
-            partitionServiceCache.delete(partitionId);
-        }
-        partitionListCache.clearAll();
+        
+        safeDelete(partitionServiceCache, partitionId);
+        safeDelete(partitionListCache, PARTITION_LIST_KEY);
         return true;
     }
 
     @Override
     public List<String> getAllPartitions() {
-        List<String> partitions = partitionListCache.get(PARTITION_LIST_KEY);
+        List<String> partitions = safeGet(partitionListCache, PARTITION_LIST_KEY);
 
         if (partitions == null) {
             Stopwatch stopwatch = Stopwatch.createStarted();
@@ -150,7 +148,7 @@ public class PartitionServiceImpl implements IPartitionService {
             stopwatch.stop();
             log.info(String.format("Total time taken to fetch all partition: %d", stopwatch.elapsed(TimeUnit.MILLISECONDS)));
             if (partitions != null) {
-                partitionListCache.put(PARTITION_LIST_KEY, partitions);
+                safePut(partitionListCache, PARTITION_LIST_KEY, partitions);
             }
         }
 
@@ -161,5 +159,42 @@ public class PartitionServiceImpl implements IPartitionService {
         }
 
         return partitions;
+    }
+
+    /**
+     * Gets a value from the cache. If the cache read fails, returns {@code null}
+     * (treated as a cache miss) instead of throwing.
+     */
+    private <V> V safeGet(ICache<String, V> cache, String key) {
+        try {
+            return cache.get(key);
+        } catch (Exception ex) {
+            log.warn(String.format("Partition cache (Redis/AMR) read failed for key '%s'; treating as cache miss and using durable store. Cause: %s", key, ex.getMessage()));
+            return null;
+        }
+    }
+
+    /**
+     * Puts a value into the cache. If the cache write fails, it is logged and
+     * ignored instead of throwing.
+     */
+    private <V> void safePut(ICache<String, V> cache, String key, V value) {
+        try {
+            cache.put(key, value);
+        } catch (Exception ex) {
+            log.warn(String.format("Partition cache (Redis/AMR) write failed for key '%s'; continuing without caching. Cause: %s", key, ex.getMessage()));
+        }
+    }
+
+    /**
+     * Deletes a key from the cache. If the cache delete fails, it is logged and
+     * ignored instead of throwing.
+     */
+    private <V> void safeDelete(ICache<String, V> cache, String key) {
+        try {
+            cache.delete(key);
+        } catch (Exception ex) {
+            log.warn(String.format("Partition cache (Redis/AMR) delete failed for key '%s'; continuing. Cause: %s", key, ex.getMessage()));
+        }
     }
 }

@@ -94,8 +94,6 @@ The following software have components provided under the terms of this license:
 - Asynchronous Http Client (from https://github.com/AsyncHttpClient/async-http-client, https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client)
 - Asynchronous Http Client Netty Utils (from http://github.com/AsyncHttpClient/async-http-client, https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client-netty-utils)
 - Awaitility (from http://awaitility.org/)
-- BSON (from http://bsonspec.org, https://bsonspec.org, https://bsonspec.org/)
-- BSON Record Codec (from <https://www.mongodb.com/>, https://bsonspec.org/, https://www.mongodb.com/)
 - Bean Validation API (from http://beanvalidation.org, http://beanvalidation.org/)
 - Byte Buddy (without dependencies) (from https://bytebuddy.net/, https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy)
 - Byte Buddy Java agent (from https://bytebuddy.net/, https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy-agent)
@@ -129,7 +127,7 @@ The following software have components provided under the terms of this license:
 - JSON library from Android SDK (from http://developer.android.com/sdk)
 - JSONassert (from http://github.com/skyscreamer/yoga, https://github.com/skyscreamer/JSONassert)
 - JSR107 API and SPI (from https://github.com/jsr107/jsr107spec)
-- JSpecify annotations (from http://jspecify.org/)
+- JSpecify annotations (from https://jspecify.dev/)
 - Jackson 2 extensions to the Google HTTP Client Library for Java. (from https://github.com/googleapis/google-http-java-client, https://repo1.maven.org/maven2/com/google/http-client/google-http-client-jackson2)
 - Jackson dataformat: CBOR (from http://github.com/FasterXML/jackson-dataformats-binary)
 - Jackson datatype: JSR310 (from http://wiki.fasterxml.com/JacksonModuleJSR310, https://github.com/FasterXML/jackson-modules-java8, https://repo1.maven.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310)
@@ -157,14 +155,16 @@ The following software have components provided under the terms of this license:
 - Microsoft Azure Java XML Library (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure Netty HTTP Client Library (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure SDK for SQL API of Azure Cosmos DB Service (from https://github.com/Azure/azure-sdk-for-java)
-- MongoDB Driver (from https://www.mongodb.com/)
-- MongoDB Java Driver (from http://mongodb.org/, http://www.mongodb.org, https://www.mongodb.com/)
 - Netty Reactive Streams Implementation (from https://repo1.maven.org/maven2/com/typesafe/netty/netty-reactive-streams)
 - Netty/Buffer (from http://netty.io/, https://repo1.maven.org/maven2/io/netty/netty-buffer)
 - Netty/Codec (from http://netty.io/, https://repo1.maven.org/maven2/io/netty/netty-codec)
+- Netty/Codec/Base (from https://netty.io/)
+- Netty/Codec/Compression (from https://netty.io/)
 - Netty/Codec/DNS (from http://netty.io/, https://repo1.maven.org/maven2/io/netty/netty-codec-dns)
 - Netty/Codec/HTTP (from http://netty.io/, https://repo1.maven.org/maven2/io/netty/netty-codec-http)
 - Netty/Codec/HTTP2 (from http://netty.io/, https://repo1.maven.org/maven2/io/netty/netty-codec-http2)
+- Netty/Codec/Marshalling (from https://netty.io/)
+- Netty/Codec/Protobuf (from https://netty.io/)
 - Netty/Codec/Socks (from http://netty.io/, https://repo1.maven.org/maven2/io/netty/netty-codec-socks)
 - Netty/Common (from http://netty.io/, https://repo1.maven.org/maven2/io/netty/netty-common)
 - Netty/Handler (from http://netty.io/, https://repo1.maven.org/maven2/io/netty/netty-handler)
@@ -182,12 +182,12 @@ The following software have components provided under the terms of this license:
 - Nimbus JOSE+JWT (from https://bitbucket.org/connect2id/nimbus-jose-jwt, https://bitbucket.org/nimbusds/nimbus-jose-jwt)
 - Nimbus LangTag (from https://bitbucket.org/connect2id/nimbus-language-tags)
 - Non-Blocking Reactive Foundation for the JVM (from https://github.com/reactor/reactor, https://github.com/reactor/reactor-core)
-- OAuth 2.0 SDK with OpenID Connect extensions (from https://bitbucket.org/connect2id/oauth-2.0-sdk-with-openid-connect-extensions)
+- OAuth 2.0 SDK with OpenID Connect and Federation extensions (from https://bitbucket.org/connect2id/oauth-2.0-sdk-with-openid-connect-extensions)
 - Objenesis (from https://objenesis.org/, https://repo1.maven.org/maven2/org/objenesis/objenesis)
 - OkHttp (from https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp, https://square.github.io/okhttp/)
 - OkHttp Logging Interceptor (from https://github.com/square/okhttp, https://repo1.maven.org/maven2/com/squareup/okhttp3/logging-interceptor, https://square.github.io/okhttp/)
 - OkHttp URLConnection (from https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp-urlconnection, https://square.github.io/okhttp/)
-- Okio (from https://github.com/square/okio/, https://repo1.maven.org/maven2/com/squareup/okio/okio)
+- Okio (from https://github.com/lysine-dev/okio/, https://github.com/square/okio/, https://repo1.maven.org/maven2/com/squareup/okio/okio)
 - OpenCensus (from https://github.com/census-instrumentation/opencensus-java)
 - OpenTelemetry Java (from https://github.com/open-telemetry/opentelemetry-java)
 - Plexus Common Utilities (from http://plexus.codehaus.org/plexus-utils, https://codehaus-plexus.github.io/plexus-utils/, https://repo1.maven.org/maven2/org/codehaus/plexus/plexus-utils)
@@ -227,7 +227,6 @@ The following software have components provided under the terms of this license:
 - Spring Context (from http://www.springframework.org, https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-context)
 - Spring Core (from http://www.springframework.org, https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-core)
 - Spring Data Core (from https://spring.io/projects/spring-data)
-- Spring Data MongoDB - Core (from https://repo1.maven.org/maven2/org/springframework/data/spring-data-mongodb, https://spring.io/projects/spring-data-mongodb)
 - Spring Expression Language (SpEL) (from https://github.com/SpringSource/spring-framework, https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-expression)
 - Spring JMS (from http://www.springframework.org, https://github.com/SpringSource/spring-framework, https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-jms)
 - Spring Messaging (from https://github.com/spring-projects/spring-framework)
@@ -288,6 +287,7 @@ The following software have components provided under the terms of this license:
 
 - Apache Log4j Core (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-core)
 - HdrHistogram (from http://hdrhistogram.github.io/HdrHistogram/)
+- Jackson-core (from http://wiki.fasterxml.com/JacksonHome, https://github.com/FasterXML/jackson-core)
 - Jodd Util (from https://util.jodd.org/)
 - LatencyUtils (from http://latencyutils.github.io/LatencyUtils/)
 - MinLog (from https://github.com/EsotericSoftware/minlog)
@@ -322,6 +322,13 @@ The following software have components provided under the terms of this license:
 - Spring Core (from http://www.springframework.org, https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-core)
 
 ========================================================================
+BSL-1.0
+========================================================================
+The following software have components provided under the terms of this license:
+
+- Jackson-core (from http://wiki.fasterxml.com/JacksonHome, https://github.com/FasterXML/jackson-core)
+
+========================================================================
 BouncyCastle
 ========================================================================
 The following software have components provided under the terms of this license:
@@ -334,7 +341,6 @@ CC-BY-2.5
 The following software have components provided under the terms of this license:
 
 - FindBugs-jsr305 (from http://findbugs.sourceforge.net/)
-- MongoDB Java Driver (from http://mongodb.org/, http://www.mongodb.org, https://www.mongodb.com/)
 
 ========================================================================
 CC0-1.0
@@ -408,7 +414,6 @@ The following software have components provided under the terms of this license:
 - JUnit Platform Engine API (from http://junit.org/junit5/, https://junit.org/junit5/)
 - Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://github.com/jakartaee/jaf-api, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
 - Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
-- Jakarta Dependency Injection (from https://github.com/eclipse-ee4j/injection-api)
 - Jakarta Messaging API (from https://projects.eclipse.org/projects/ee4j.jms)
 - Jakarta XML Binding API (from https://repo1.maven.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api, https://repo1.maven.org/maven2/org/jboss/spec/javax/xml/bind/jboss-jaxb-api_2.3_spec)
 - Old JAXB Core (from <https://eclipse-ee4j.github.io/jaxb-ri/>, https://eclipse-ee4j.github.io/jaxb-ri/, https://repo1.maven.org/maven2/com/sun/xml/bind/jaxb-impl)
@@ -557,6 +562,7 @@ The following software have components provided under the terms of this license:
 
 - Guava: Google Core Libraries for Java (from http://code.google.com/p/guava-libraries, https://github.com/google/guava, https://repo1.maven.org/maven2/com/google/guava/guava)
 - Netty/Codec (from http://netty.io/, https://repo1.maven.org/maven2/io/netty/netty-codec)
+- Netty/Codec/Base (from https://netty.io/)
 
 ========================================================================
 gpl-2.0-classpath
