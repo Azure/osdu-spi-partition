@@ -16,11 +16,11 @@
 
 package org.opengroup.osdu.partition.logging;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Collections;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.core.common.logging.audit.AuditStatus;
 
 public class AuditEventsTest {

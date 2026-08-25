@@ -14,12 +14,10 @@
 
 package org.opengroup.osdu.partition.controller;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.partition.logging.AuditLogger;
 import org.opengroup.osdu.partition.model.PartitionInfo;
@@ -35,11 +33,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class PartitionControllerTest {
 
     private final AppException NOT_FOUND_EXCEPTION =
@@ -108,22 +111,19 @@ public class PartitionControllerTest {
         assertEquals(HttpStatus.NO_CONTENT.value(), result.getStatusCodeValue());
     }
 
-    @Test(expected = AppException.class)
+    @Test
     public void should_throwException_when_deletingOfNonExistentPartition() {
         when(partitionService.deletePartition(anyString())).thenThrow(NOT_FOUND_EXCEPTION);
-        this.sut.delete("fakePartition");
+
+        assertThrows(AppException.class, () -> this.sut.delete("fakePartition"));
     }
 
-    @Test(expected = AppException.class)
+    @Test
     public void should_throwException_when_deletingNonExistentPartition() {
         when(partitionService.deletePartition(anyString())).thenThrow(NOT_FOUND_EXCEPTION);
-        try {
-            this.sut.delete("fakePartition");
-        }
-        catch (AppException ae) {
-            assertEquals(HttpStatus.NOT_FOUND.value(), ae.getError().getCode());
-            throw ae;
-        }
+
+        AppException ae = assertThrows(AppException.class, () -> this.sut.delete("fakePartition"));
+        assertEquals(HttpStatus.NOT_FOUND.value(), ae.getError().getCode());
     }
 
     @Test

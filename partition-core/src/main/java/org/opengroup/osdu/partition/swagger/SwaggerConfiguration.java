@@ -26,6 +26,7 @@ import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.media.BooleanSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
@@ -95,8 +96,10 @@ public class SwaggerConfiguration {
                             .in("header")
                             .required(true)
                             .description("Tenant Id")
+                            .schema(new StringSchema())
                             .name(DpsHeaders.DATA_PARTITION_ID));
             return operation;
         };
     }
+
 }

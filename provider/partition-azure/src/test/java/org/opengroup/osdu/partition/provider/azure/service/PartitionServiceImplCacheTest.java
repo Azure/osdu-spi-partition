@@ -68,7 +68,7 @@ public class PartitionServiceImplCacheTest {
         assertEquals(newPi, partition);
         verify(tableStore, times(1)).addPartition(partId, newPi);
         verify(partitionServiceCache, times(1)).put(partId, retPi);
-        verify(partitionListCache, times(1)).clearAll();
+        verify(partitionListCache, times(1)).delete(PartitionServiceImpl.PARTITION_LIST_KEY);
     }
 
     @Test
@@ -124,17 +124,14 @@ public class PartitionServiceImplCacheTest {
     @Test
     public void deletePartition() {
         String partId = "key";
-        PartitionInfo retPi = PartitionInfo.builder().build();
 
         when(tableStore.partitionExists(partId)).thenReturn(true);
-        when(partitionServiceCache.get(partId)).thenReturn(retPi);
 
         partitionService.deletePartition(partId);
 
         verify(tableStore, times(1)).deletePartition(partId);
         verify(partitionServiceCache, times(1)).delete(partId);
-        verify(partitionServiceCache, times(1)).get(partId);
-        verify(partitionListCache, times(1)).clearAll();
+        verify(partitionListCache, times(1)).delete(PartitionServiceImpl.PARTITION_LIST_KEY);
     }
 
     @Test

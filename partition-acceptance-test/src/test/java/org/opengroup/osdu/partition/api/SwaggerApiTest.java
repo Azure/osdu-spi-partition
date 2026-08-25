@@ -17,42 +17,20 @@
 
 package org.opengroup.osdu.partition.api;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.apache.hc.core5.http.HttpStatus;
+import org.junit.jupiter.api.Test;
+import org.opengroup.osdu.partition.util.BasePartitionAcceptanceTests;
 
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.opengroup.osdu.partition.util.TestBase;
-import org.opengroup.osdu.partition.util.TestUtils;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
+public final class SwaggerApiTest extends BasePartitionAcceptanceTests {
 
-public final class SwaggerApiTest extends TestBase {
+    @Test
+    public void shouldReturn200_whenSwaggerApiIsCalled() {
+        assertEquals(HttpStatus.SC_OK, partitionClient.getSwagger().statusCode());
+    }
 
-  private static final String CONTEXT_PATH = "api/partition/v1/";
-  private static final String SWAGGER_API_PATH = "swagger";
-  private static final String SWAGGER_API_DOCS_PATH = "api-docs";
-
-  @Override
-  @Before
-  public void setup() throws Exception {
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-  }
-
-  @Test
-  public void shouldReturn200_whenSwaggerApiIsCalled() throws Exception {
-    CloseableHttpResponse response = TestUtils.send(CONTEXT_PATH + SWAGGER_API_PATH, HttpMethod.GET.name(),false);
-    assertEquals(HttpStatus.OK.value(), response.getCode());
-  }
-
-  @Test
-  public void shouldReturn200_whenSwaggerApiDocsIsCalled() throws Exception {
-    CloseableHttpResponse response = TestUtils.send(CONTEXT_PATH + SWAGGER_API_DOCS_PATH, HttpMethod.GET.name(),false);
-    assertEquals(HttpStatus.OK.value(), response.getCode());
-  }
+    @Test
+    public void shouldReturn200_whenSwaggerApiDocsIsCalled() {
+        assertEquals(HttpStatus.SC_OK, partitionClient.getApiDocs().statusCode());
+    }
 }

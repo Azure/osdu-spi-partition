@@ -40,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -251,5 +253,73 @@ public class PartitionServiceImplTest {
 
         assertNotNull(partitions);
         assertEquals(Collections.singletonList("partition1"), partitions);
+    }
+
+    // --- Regression tests for the July 18 incident: a broken Redis/AMR cache (timeout /
+    // connectivity fault) must degrade to the durable store (Azure Table Storage) instead of
+    // surfacing a 5xx. These cover the case where the cache is *broken* (throws), not merely a miss.
+
+    @Test
+    public void should_fallBackToTableStore_when_cacheReadThrows_onGetPartition() {
+        // Simulate the pod-level Redis connectivity fault seen on July 18.
+        when(partitionServiceCache.get(PARTITION_ID))
+                .thenThrow(new RuntimeException("Redis command timed out (AMR)"));
+        when(this.tableStore.getPartition(PARTITION_ID)).thenReturn(properties);
+
+        PartitionInfo result = this.sut.getPartition(PARTITION_ID);
+
+        assertNotNull(result);
+        assertTrue(result.getProperties().containsKey("id"));
+        assertTrue(result.getProperties().containsKey("storageAccount"));
+        assertTrue(result.getProperties().containsKey("complianceRuleSet"));
+    }
+
+    @Test
+    public void should_notFail_when_cacheWriteThrows_onGetPartition() {
+        // Cache read is a miss, durable store answers, but the write-back to a broken cache fails.
+        when(this.tableStore.getPartition(PARTITION_ID)).thenReturn(properties);
+        doThrow(new RuntimeException("Redis write timed out (AMR)"))
+                .when(partitionServiceCache).put(any(String.class), any(PartitionInfo.class));
+
+        PartitionInfo result = this.sut.getPartition(PARTITION_ID);
+
+        assertNotNull(result);
+        assertTrue(result.getProperties().containsKey("id"));
+    }
+
+    @Test
+    public void should_fallBackToTableStore_when_cacheReadThrows_onGetAllPartitions() {
+        when(this.partitionListCache.get("getAllPartitions"))
+                .thenThrow(new RuntimeException("Redis command timed out (AMR)"));
+        List<String> partitionsList = Arrays.asList("partition1", "partition2");
+        when(this.tableStore.getAllPartitions()).thenReturn(partitionsList);
+
+        List<String> partitions = this.sut.getAllPartitions();
+
+        assertNotNull(partitions);
+        assertEquals(partitionsList, partitions);
+    }
+
+    @Test
+    public void should_notFail_when_cacheWriteThrows_onCreatePartition() {
+        when(this.tableStore.partitionExists(PARTITION_ID)).thenReturn(false);
+        doThrow(new RuntimeException("Redis write timed out (AMR)"))
+                .when(partitionServiceCache).put(any(String.class), any(PartitionInfo.class));
+
+        PartitionInfo result = this.sut.createPartition(PARTITION_ID, this.partitionInfo);
+
+        assertNotNull(result);
+        assertEquals(3, result.getProperties().size());
+    }
+
+    @Test
+    public void should_notFail_when_cacheDeleteThrows_onDeletePartition() {
+        when(this.tableStore.partitionExists(PARTITION_ID)).thenReturn(true);
+        doThrow(new RuntimeException("Redis delete timed out (AMR)"))
+                .when(partitionServiceCache).delete(PARTITION_ID);
+        doThrow(new RuntimeException("Redis delete timed out (AMR)"))
+                .when(partitionListCache).delete(PartitionServiceImpl.PARTITION_LIST_KEY);
+
+        assertTrue(this.sut.deletePartition(PARTITION_ID));
     }
 }

@@ -72,6 +72,13 @@ spec:
             runAsNonRoot: true
           ports:
             - containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /api/partition/v1/info
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 5
           volumeMounts:
             - name: system-partition
               mountPath: {{ .Values.data.systemPartitionConfigPath | quote }}
