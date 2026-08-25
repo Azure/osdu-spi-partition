@@ -14,59 +14,29 @@
 
 package org.opengroup.osdu.partition.api;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.apache.hc.core5.http.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.hc.core5.http.HttpStatus.SC_OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.List;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.opengroup.osdu.partition.api.descriptor.ListPartitionDescriptor;
-import org.opengroup.osdu.partition.util.BaseTestTemplate;
-import org.opengroup.osdu.partition.util.Config;
-import org.opengroup.osdu.partition.util.TestTokenUtils;
-import org.opengroup.osdu.partition.util.TestUtils;
-import org.springframework.http.HttpStatus;
+import org.apache.hc.core5.http.Method;
+import org.junit.jupiter.api.Test;
+import org.opengroup.osdu.core.test.client.HttpResponse;
+import org.opengroup.osdu.core.test.client.model.partition.PartitionListResponse;
+import org.opengroup.osdu.partition.util.BasePartitionAcceptanceTests;
 
-public final class ListPartitionsApiTest extends BaseTestTemplate {
+public final class ListPartitionsApiTest extends BasePartitionAcceptanceTests {
 
-    private String partitionId = Config.Instance().osduTenant;
+    @Test
+    public void retrieve_partition_list() {
+        HttpResponse<PartitionListResponse> response = partitionClient.listPartitions();
 
-    @Override
-    @Before
-    public void setup() {
-        this.testUtils = new TestTokenUtils();
-    }
-
-    @Override
-    @After
-    public void tearDown() {
-        this.testUtils = null;
-    }
-
-    @Override
-    protected String getId() {
-        return partitionId;
-    }
-
-    public ListPartitionsApiTest() {
-        super(new ListPartitionDescriptor());
-    }
-
-    @Override
-    protected int expectedOkResponseCode() {
-        return HttpStatus.OK.value();
+        assertNotNull(response.body());
+        assertEquals(SC_OK, response.statusCode());
     }
 
     @Test
-    public void retrieve_partition_list() throws Exception {
-        CloseableHttpResponse response = this.descriptor.run(null, this.testUtils.getAccessToken());
-        Object partitionIds = TestUtils.parseResponse(response);
-
-        Assert.assertNotNull(partitionIds);
-        // assertTrue(partitionIds.contains(partitionId));
-        assertEquals(HttpStatus.OK.value(), response.getCode());
+    public void should_return400_when_makingHttpRequestWithoutValidUrl() throws Exception {
+        assertEquals(SC_BAD_REQUEST, send("partitions//", Method.GET).statusCode());
     }
 }

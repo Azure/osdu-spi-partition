@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.azure.data.tables.TableServiceClient;
+import com.azure.identity.DefaultAzureCredential;
 
 @ExtendWith(MockitoExtension.class)
 class TableStorageBootstrapConfigTest {
@@ -33,14 +34,17 @@ class TableStorageBootstrapConfigTest {
     @Mock
     private TableServiceClient tableServiceClient;
 
+    @Mock
+    private DefaultAzureCredential defaultAzureCredential;
+
     @Test
     void testGetTableServiceClient() {
         // Mock the required dependencies
         String storageAccountEndpoint = "mock-storage-account-endpoint";
-        when(tableStorageBootstrapConfig.getTableServiceClient(storageAccountEndpoint)).thenReturn(tableServiceClient);
+        when(tableStorageBootstrapConfig.getTableServiceClient(storageAccountEndpoint, defaultAzureCredential)).thenReturn(tableServiceClient);
 
         // Call the method under test
-        TableServiceClient result = tableStorageBootstrapConfig.getTableServiceClient(storageAccountEndpoint);
+        TableServiceClient result = tableStorageBootstrapConfig.getTableServiceClient(storageAccountEndpoint, defaultAzureCredential);
 
         // Perform assertions
         assertNotNull(result);

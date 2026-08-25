@@ -17,6 +17,8 @@ variables:
 
   ACCEPTANCE_TEST_DIR: "partition-acceptance-test"
 
+  CIMPL_OPENAPI_YAML_ROUTE: /api/partition/v1/api-docs.yaml
+
 include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "standard-setup.yml"
@@ -60,6 +62,9 @@ include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/gc-one-pipeline.yml"
 
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "reporting/schemathesis.yml"
+
   - local: "devops/gc-quarkus/pipeline/override-stages.yml"
 
   - local: "devops/core-plus/pipeline/override-stages.yml"
@@ -80,3 +85,6 @@ download_plugins:
   rules:
     - if: "$PROTECTED == '1'"
       when: on_success
+
+schemathesis-tests:
+  extends: .schemathesis-tests-template

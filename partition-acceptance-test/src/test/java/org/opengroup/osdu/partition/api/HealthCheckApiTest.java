@@ -17,55 +17,24 @@
 
 package org.opengroup.osdu.partition.api;
 
-import static org.junit.Assert.assertEquals;
+import static org.apache.hc.core5.http.HttpStatus.SC_OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.opengroup.osdu.partition.util.TestBase;
-import org.opengroup.osdu.partition.util.TestTokenUtils;
-import org.opengroup.osdu.partition.util.TestUtils;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
+import org.junit.jupiter.api.Test;
+import org.opengroup.osdu.core.test.client.HttpResponse;
+import org.opengroup.osdu.partition.util.BasePartitionAcceptanceTests;
 
-public final class HealthCheckApiTest extends TestBase {
+public final class HealthCheckApiTest extends BasePartitionAcceptanceTests {
 
-  @Override
-  @Before
-  public void setup() throws Exception {
-    this.testUtils = new TestTokenUtils();
-  }
+    @Test
+    public void should_returnOk() {
+        HttpResponse<Void> response = partitionClient.livenessCheck();
+        assertEquals(SC_OK, response.statusCode());
+    }
 
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    this.testUtils = new TestTokenUtils();
-  }
-
-  @Test
-  public void should_returnOk() throws Exception {
-    CloseableHttpResponse response = TestUtils.send(
-        "api/partition/v1/liveness_check",
-        HttpMethod.GET.name(),
-        null,
-        "",
-        "",
-        false
-    );
-    assertEquals(HttpStatus.OK.value(), response.getCode());
-  }
-
-  @Test
-  public void should_returnTrailingOk() throws Exception {
-    CloseableHttpResponse response = TestUtils.send(
-        "api/partition/v1/liveness_check/",
-        HttpMethod.GET.name(),
-        this.testUtils.getAccessToken(),
-        "",
-        "",
-        false
-    );
-    assertEquals(HttpStatus.OK.value(), response.getCode());
-  }
+    @Test
+    public void should_returnOkWithTrailingSlash() {
+        HttpResponse<Void> response = partitionClient.livenessCheckTrailingSlash();
+        assertEquals(SC_OK, response.statusCode());
+    }
 }

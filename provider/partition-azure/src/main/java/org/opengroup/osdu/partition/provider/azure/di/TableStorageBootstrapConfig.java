@@ -19,8 +19,7 @@ import com.azure.core.http.policy.RetryOptions;
 import com.azure.data.tables.TableClient;
 import com.azure.data.tables.TableServiceClient;
 import com.azure.data.tables.TableServiceClientBuilder;
-import com.azure.identity.DefaultAzureCredentialBuilder;
-import com.azure.core.credential.TokenCredential;
+import com.azure.identity.DefaultAzureCredential;
 
 import lombok.Setter;
 import org.apache.http.HttpStatus;
@@ -44,7 +43,8 @@ public class TableStorageBootstrapConfig {
     @Bean
     @Lazy
     public TableServiceClient getTableServiceClient(
-        final @Named("TABLE_STORAGE_ENDPOINT") String storageAccountEndpoint) {
+        final @Named("TABLE_STORAGE_ENDPOINT") String storageAccountEndpoint,
+        final DefaultAzureCredential defaultAzureCredential) {
         try {
             
             Validators.checkNotNullAndNotEmpty(storageAccountEndpoint, "storageAccountEndpoint");
@@ -54,12 +54,10 @@ public class TableStorageBootstrapConfig {
             //cloudTableClient.getDefaultRequestOptions().setMaximumExecutionTimeInMs(maximumExecutionTimeMs);
             com.azure.core.http.policy.FixedDelayOptions fixedDelayOptions = new FixedDelayOptions(retryMaxAttempts, Duration.ofMillis(retryDeltaBackoffMs));
             RetryOptions retryOptions = new RetryOptions(fixedDelayOptions);
-            
-            TokenCredential managedIdentityCredential = new DefaultAzureCredentialBuilder().build();
 
             TableServiceClient serviceClient = new TableServiceClientBuilder()
                     .endpoint(storageAccountEndpoint)
-                    .credential(managedIdentityCredential)
+                    .credential(defaultAzureCredential)
                     .retryOptions(retryOptions)
                     .buildClient();
 

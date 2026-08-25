@@ -16,17 +16,17 @@
 
 package org.opengroup.osdu.partition.controller;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HealthCheckControllerTests {
 
 	private HealthCheckController sut;
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		this.sut = new HealthCheckController();
 	}
