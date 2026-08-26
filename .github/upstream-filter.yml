@@ -1,0 +1,76 @@
+# Per-service upstream filter config (ADR-038).
+# Every upstream top-level entry, testing/ entry, root pom profile, and .fossa.yml
+# module must appear here: the engine halts rather than guess.
+service: partition
+
+top_level:
+  .dockerignore: keep
+  .editorconfig: keep
+  .fossa.yml: keep
+  .gitattributes: keep
+  .gitignore: keep
+  .gitlab-ci.yml: strip
+  .mvn: keep
+  LICENSE: keep
+  NOTICE: keep
+  README.md: keep
+  docs: keep
+  partition-acceptance-test: keep
+  partition-core: keep
+  partition-core-plus: strip
+  pom.xml: keep
+
+testing:
+  INTEGRATION-TESTS.md: keep
+  README.md: keep
+  maven: keep
+  pom.xml: keep
+  partition-test-core: keep
+  partition-test-azure: fork
+  partition-test-aws: strip
+  partition-test-baremetal: strip
+  partition-test-core-plus: strip
+  partition-test-gc: strip
+  partition-test-ibm: strip
+
+profiles:
+  Default: keep
+  core: keep
+  azure: inject
+  aws: strip
+  gc: strip
+  ibm: strip
+
+fossa_modules:
+  partition: keep
+  partition-core: keep
+  partition-azure: strip
+  partition-aws: strip
+  partition-gcp: strip
+  partition-ibm: strip
+
+expected_kept:
+  - pom.xml
+  - partition-core
+  - partition-acceptance-test
+  - testing/partition-test-core
+
+expected_absent:
+  - provider
+  - devops
+  - partition-core-plus
+  - .gitlab-ci.yml
+  - testing/partition-test-azure
+  - testing/partition-test-aws
+  - testing/partition-test-core-plus
+
+inject_root_pom_azure_profile: |
+      <profile>
+        <id>azure</id>
+        <modules>
+          <module>provider/partition-azure</module>
+        </modules>
+      </profile>
+
+inject_testing_pom_azure_module: |
+  		<module>partition-test-azure</module>
