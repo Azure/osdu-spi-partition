@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.2.0](https://github.com/Azure/osdu-spi-partition/compare/v1.1.0...v1.2.0) (2026-08-27)
+
+
+### ✨ Features
+
+* Add upstream-filter config for ADR-038 ([f9391e0](https://github.com/Azure/osdu-spi-partition/commit/f9391e06f557949896546410b5895d4e033ec365))
+* Add upstream-filter config for ADR-038 ([602bd14](https://github.com/Azure/osdu-spi-partition/commit/602bd14011124c681f332e9fd012879826cdd8bb))
+* Sync upstream changes from ([034e53c](https://github.com/Azure/osdu-spi-partition/commit/034e53ce11f58447718c505ef8716dc11145d09d))
+* Sync upstream changes from ([666e35b](https://github.com/Azure/osdu-spi-partition/commit/666e35bb8fecc6314109bfd3eae1d93feffc19a6))
+* Sync upstream changes from 0b8fd115 ([f4065ea](https://github.com/Azure/osdu-spi-partition/commit/f4065ea1d62ec8e9a3a872bb74000c2c6265870a))
+
+
+### 🐛 Bug Fixes
+
+* **azure:** Netty-bom before core-lib-azure (lettuce 7.5.2 NoClassDefFoundError) ([6bb0fb3](https://github.com/Azure/osdu-spi-partition/commit/6bb0fb3a2a971b578d1f491193ac0aa048a9a090))
+* **azure:** Netty-bom before core-lib-azure (lettuce 7.5.2 NoClassDefFoundError) ([28afaf3](https://github.com/Azure/osdu-spi-partition/commit/28afaf3da5d2c9c28970ea8c8ada26b7ed933338))
+* **azure:** Upgrade core-lib-azure to 3.0.1 ([561c0f7](https://github.com/Azure/osdu-spi-partition/commit/561c0f73c7ba714d9226bd86812f340408b0e621))
+* **azure:** Upgrade core-lib-azure to 3.0.1 ([a9a3cf8](https://github.com/Azure/osdu-spi-partition/commit/a9a3cf82ac7ce4022b58486b47600c57ff7f67cf))
+* **cve:** Pin bcprov-jdk18on 1.84 in partition-aws (CVE-2025-14813) ([7ce6746](https://github.com/Azure/osdu-spi-partition/commit/7ce674657491b85647d73bb2805d86d05ddd86b7))
+* **cve:** Pin bcprov-jdk18on 1.84 in partition-aws (CVE-2025-14813) ([b9a2cac](https://github.com/Azure/osdu-spi-partition/commit/b9a2cac42fb0ffebf39fd8e68b6d954ff923b47a))
+
+
+### 📚 Documentation
+
+* **acceptance:** Fill in the source column of the environment table ([5aaac09](https://github.com/Azure/osdu-spi-partition/commit/5aaac0975fe2006ea0bbd83f7687046ccd43c973))
+* **acceptance:** Fill in the source column of the environment table ([f89e19f](https://github.com/Azure/osdu-spi-partition/commit/f89e19f91092bc2fdf7675ea263d11d68cfc91bb))
+
+
+### 🔧 Miscellaneous
+
+* **ci:** Remove IBM jobs from pipeline ([7d5f5e8](https://github.com/Azure/osdu-spi-partition/commit/7d5f5e8f05ce1c1090b1dbccfee0277651a307c4))
+* **ci:** Remove IBM jobs from pipeline ([a3fb144](https://github.com/Azure/osdu-spi-partition/commit/a3fb144b90a6216d2a91dcfb297e0f84f6e84afc))
+* **deps:** Remediate partition vulnerabilities ([2efe9da](https://github.com/Azure/osdu-spi-partition/commit/2efe9da9523ddd1b4c331371e0cdbb5a8bd73c72))
+* **deps:** Remediate partition vulnerabilities ([74946fc](https://github.com/Azure/osdu-spi-partition/commit/74946fcfd6e34da921cdc49e953d241e232499f0))
+* Generate filtered upstream tree ([0338d62](https://github.com/Azure/osdu-spi-partition/commit/0338d6291f7529ddf627c955d356f1be37ec6149))
+* **sonar:** Remove unused imports in partition-aws AuthorizationService (S1128) ([82b0fbe](https://github.com/Azure/osdu-spi-partition/commit/82b0fbee6e72865e1c2614fedf6502fe7c392c74))
+* **sonar:** Remove unused imports in partition-aws AuthorizationService (S1128) ([f9d2119](https://github.com/Azure/osdu-spi-partition/commit/f9d21191a4cfc858a4d2df5a1b75df273d5198b8))
+* Sync template updates ([3edb7d6](https://github.com/Azure/osdu-spi-partition/commit/3edb7d660804a0d69a8a08cca5331fb3f5a19554))
+* Sync template updates ([90fcd93](https://github.com/Azure/osdu-spi-partition/commit/90fcd93635c50769a8024fee2fec06e459044e67))
+* Sync template updates ([68fad86](https://github.com/Azure/osdu-spi-partition/commit/68fad86d841e5840c988cef16e241445d6d55f87))
+* **template-sync:** Sync template updates (2026-08-25)" ([a5721af](https://github.com/Azure/osdu-spi-partition/commit/a5721af71f83e69289c99fd5f44eb07856cf5ade))
+* **template-sync:** Sync template updates 2026-08-26 ([6dec644](https://github.com/Azure/osdu-spi-partition/commit/6dec644b040bafe8821bdd3618562e78d76cbf01))
+
 ## [1.1.0](https://github.com/Azure/osdu-spi-partition/compare/v1.0.2...v1.1.0) (2026-04-22)
 
 
