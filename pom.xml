@@ -339,31 +339,12 @@
       </activation>
       <modules>
         <module>partition-core</module>
-        <module>partition-core-plus</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>aws</id>
-      <modules>
-        <module>provider/partition-aws</module>
       </modules>
     </profile>
     <profile>
       <id>azure</id>
       <modules>
         <module>provider/partition-azure</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>ibm</id>
-      <modules>
-        <module>provider/partition-ibm</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>gc</id>
-      <modules>
-        <module>provider/partition-gc-quarkus</module>
       </modules>
     </profile>
   </profiles>
