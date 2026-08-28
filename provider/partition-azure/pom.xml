@@ -35,7 +35,7 @@
     <!-- Plugin Versions -->
     <surefire-plugin.version>3.5.4</surefire-plugin.version>
     <jacoco-plugin.version>0.8.12</jacoco-plugin.version>
-    <jackson.version>2.21.2</jackson.version>
+    <jackson.version>2.21.6</jackson.version>
   </properties>
 
   <dependencyManagement>
