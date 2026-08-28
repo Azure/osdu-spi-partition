@@ -10,7 +10,7 @@ One could either spin up a postgres docker container locally, and use along with
 
 ## Running Locally - AWS
 
-Instructions for running the AWS implementation locally can be found [here](./provider/partition-aws/README.md)
+The AWS provider has been removed from this repository.
 
 ## Running Locally - Azure
 
