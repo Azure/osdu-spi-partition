@@ -1,30 +1,14 @@
 name: Validation
 
 on:
-  # No paths-ignore here: validate.yml must always trigger on PRs to a protected branch so the
-  # required "🐳 Docker Build" summary check always reports (a path-skipped workflow stays Pending
-  # and wedges the PR; a path-skipped heavy job is gated below via check-paths instead). ADR-030.
+  # No paths-ignore on either PR trigger: the required "🐳 Docker Build" summary check must always
+  # report (a path-skipped workflow stays Pending and wedges the PR; heavy jobs are gated below via
+  # check-paths instead). ADR-030. check-initialization routes each PR to exactly one lane.
   pull_request:
     branches: [main, fork_integration, fork_upstream]
   pull_request_target:
     branches: [main, fork_integration, fork_upstream]
     types: [opened, synchronize, reopened]
-    paths-ignore:
-      - '.github/workflows/**'
-      - '.github/template-workflows/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/actions/**'
-      - '.github/*.md'
-      - '.github/*.json'
-      - '.github/*.yml'
-      - '.github/*.yaml'
-      - '.github/.template-sync-commit'
-      - '.vscode/**'
-      - 'docs/**'
-      - '**.md'
-      - '**.txt'
-      - 'LICENSE'
-      - 'NOTICE'
   push:
     branches: [main, fork_integration, fork_upstream]
     paths-ignore:
@@ -63,16 +47,17 @@ permissions:
 jobs:
   check-initialization:
     name: "🔍 Check Initialization Status"
-    # Skip automatic runs during initialization - only run on manual trigger or PR
-    # pull_request_target: same-repo check below excludes forks, so sync/ prefix only admits
-    # writer-pushed branches; kept over an actor check since human conflict-resolution pushes change the actor.
+    # Skip automatic runs during initialization - only run on manual trigger or PR.
+    # One lane per PR: same-repo sync/ PRs take pull_request_target, which reads this file from the
+    # default branch (filter mode's fork_upstream has none). Every other PR takes pull_request.
     if: |
       github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'pull_request' ||
+      (github.event_name == 'pull_request' &&
+       !(github.event.pull_request.head.repo.full_name == github.repository &&
+         startsWith(github.event.pull_request.head.ref, 'sync/'))) ||
       (github.event_name == 'pull_request_target' &&
        github.event.pull_request.head.repo.full_name == github.repository &&
-       (github.actor == 'github-actions[bot]' || github.actor == 'dependabot[bot]' ||
-        startsWith(github.event.pull_request.head.ref, 'sync/'))) ||
+       startsWith(github.event.pull_request.head.ref, 'sync/')) ||
       (github.event_name == 'push' && 
        !contains(github.event.head_commit.message, 'chore: complete repository initialization') &&
        !contains(github.event.head_commit.message, 'chore: clean up template files after initialization'))
@@ -81,7 +66,7 @@ jobs:
       initialized: ${{ steps.check.outputs.initialized }}
     steps:
       - name: "Checkout Code"
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         with:
           # For pull_request_target, we need to check out the PR head to validate the actual changes
           # For pull_request, this will be the same as the default behavior
@@ -135,7 +120,7 @@ jobs:
       is_initialized: ${{ steps.check_init.outputs.initialized }}
       is_java_repo: ${{ steps.check_java.outputs.is_java }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         with:
           # For pull_request_target, we need to check out the PR head to validate the actual changes
           ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
@@ -167,7 +152,7 @@ jobs:
     outputs:
       should_run: ${{ steps.filter.outputs.should_run }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         with:
           # For pull_request_target, diff against the PR head; pull_request resolves to the merge sha.
           ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
@@ -228,7 +213,7 @@ jobs:
       is_java_project: ${{ steps.build.outputs.is_java_project }}
       build_result: ${{ steps.build.outputs.build_result }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         with:
           # For pull_request_target, we need to check out the PR head to validate the actual changes
           ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
@@ -256,7 +241,7 @@ jobs:
           echo "✅ Local actions restored - validation can proceed"
 
       - name: Set up JDK
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654  # v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654  # v5.2.0
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -288,7 +273,7 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.OPENGROUP_MAVEN_USERNAME }}
           MAVEN_TOKEN: ${{ secrets.OPENGROUP_MAVEN_TOKEN }}
         with:
-          generate_coverage: ${{ github.event_name == 'pull_request' }}
+          generate_coverage: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
           gitlab_token: ${{ secrets.GITLAB_TOKEN }}
           # core is activeByDefault, so a bare profile flag would drop it; MAVEN_PROFILE
           # overrides for services that deviate (e.g. indexer-queue). In filter mode
@@ -313,7 +298,7 @@ jobs:
     permissions:
       contents: read          # no packages: write — runs untrusted Dockerfile content
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         with:
           # For pull_request_target, check out the PR head to validate the actual Dockerfile
           ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
@@ -354,7 +339,7 @@ jobs:
       image_repository: ${{ steps.push.outputs.image_repository }}
       image_digest: ${{ steps.push.outputs.image_digest }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         with:
           ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
@@ -379,7 +364,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout Code"
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         with:
           # For pull_request_target, we need to check out the PR head to validate the actual changes
           ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
@@ -420,7 +405,7 @@ jobs:
           !startsWith(github.event.pull_request.title, '🚀 Production Release: Upstream Integration') &&
           !startsWith(github.head_ref, 'release/upstream-') &&
           !startsWith(github.head_ref, 'release-please--branches--')
-        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50  # v6
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50  # v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -529,10 +514,18 @@ jobs:
     # Required branch-protection check "🐳 Docker Build" (ADR-030 summary-job pattern, mirrors the
     # CodeQL summary job). Consolidates the validate-only build into one always-reporting context so
     # the required check never wedges (config-only/non-Java/dependabot/uninitialized all pass) and a
-    # real build failure blocks. Suppressed on pull_request_target so the dual trigger reports it once.
+    # real build failure blocks. always() bypasses check-initialization's routing, so it is repeated
+    # here: the lane that did not build must not report green.
     name: "🐳 Docker Build"
     needs: [check-initialization, check-repo-state, check-paths, java-build, docker-build]
-    if: always() && github.event_name != 'pull_request_target'
+    if: |
+      always() &&
+      (github.event_name != 'pull_request' ||
+       !(github.event.pull_request.head.repo.full_name == github.repository &&
+         startsWith(github.event.pull_request.head.ref, 'sync/'))) &&
+      (github.event_name != 'pull_request_target' ||
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        startsWith(github.event.pull_request.head.ref, 'sync/')))
     runs-on: ubuntu-latest
     steps:
       - name: "Report Docker Build Status"
