@@ -1,5 +1,7 @@
 name: Build and Test
 
+# Push-only: PR events belong to validate.yml and dependabot-validation.yml, whose builds
+# generate the same coverage, so one commit is never built twice.
 on:
   push:
     branches: 
@@ -7,6 +9,8 @@ on:
       - '!main'     # Exclude main branch
       - '!fork_integration'  # Exclude fork_integration as it's covered by validate
       - '!fork_upstream'     # Exclude fork_upstream as it's covered by validate
+      - '!sync/**'           # Sync branches are covered by validate
+      - '!dependabot/**'     # Dependency branches are covered by dependabot-validation
     paths-ignore:
       - '.github/workflows/**'
       - '.github/template-workflows/**'
@@ -23,28 +27,6 @@ on:
       - '**.txt'
       - 'LICENSE'
       - 'NOTICE'
-  pull_request:
-    branches:
-      - main
-      - fork_integration
-      - fork_upstream
-    paths-ignore:
-      - '.github/workflows/**'
-      - '.github/template-workflows/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/actions/**'
-      - '.github/*.md'
-      - '.github/*.json'
-      - '.github/*.yml'
-      - '.github/*.yaml'
-      - '.github/.template-sync-commit'
-      - '.vscode/**'
-      - 'docs/**'
-      - '**.md'
-      - '**.txt'
-      - 'LICENSE'
-      - 'NOTICE'
-
 permissions:
   contents: read
   pull-requests: write
@@ -57,7 +39,7 @@ jobs:
       initialized: ${{ steps.check_init.outputs.initialized }}
       is_java_project: ${{ steps.check_java.outputs.is_java }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         
       - name: "Check Repository Initialization"
         id: check_init
@@ -86,7 +68,7 @@ jobs:
       is_java_project: ${{ steps.build.outputs.is_java_project }}
       build_result: ${{ steps.build.outputs.build_result }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
       
       - name: "Run Java Build"
         id: build
@@ -100,10 +82,10 @@ jobs:
     if: needs.check-repo-state.outputs.is_java_project == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
 
       - name: "Setup Java Environment"
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654  # v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654  # v5.2.0
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -111,7 +93,7 @@ jobs:
           cache-dependency-path: '**/pom.xml'
 
       - name: "Cache Maven Packages"
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
         with:
           path: |
             ~/.m2/repository
