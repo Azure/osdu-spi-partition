@@ -284,10 +284,14 @@ jobs:
     # Skipped for filter-mode fork_upstream targets: that branch builds core only, so the Azure
     # JAR the Dockerfile packages does not exist there. In mirror mode (ADR-039) fork_upstream
     # carries provider/ and java-build produced the JAR, so the image is validated too.
+    # No pull_request_target lane and no checkout ref: a PR-head ref in a read-only-permissions job
+    # is a CodeQL cache-poisoning finding in every fork (#164). Mirror-mode sync PRs get their image
+    # validated on the cascade PR (and on the fork_upstream push in mirror mode).
     name: "🐳 Docker Build (validate)"
     needs: [check-initialization, check-repo-state, java-build]
     if: |
       needs.java-build.outputs.build_result == 'success' &&
+      github.event_name != 'pull_request_target' &&
       (vars.SYNC_MODE == 'mirror' ||
        (github.base_ref != 'fork_upstream' && github.ref_name != 'fork_upstream'))
     runs-on: ubuntu-latest
@@ -295,9 +299,6 @@ jobs:
       contents: read          # no packages: write — runs untrusted Dockerfile content
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
-        with:
-          # For pull_request_target, check out the PR head to validate the actual Dockerfile
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: "Docker Build (validate-only)"
         uses: ./.github/actions/docker-build
@@ -308,6 +309,14 @@ jobs:
           # module name (e.g. entitlements-v2-azure) doesn't match, so a fresh fork needs no variable.
           # SERVICE_NAME falls back to the repo name; SERVICE_TARGET_JAR forces a specific path (ADR-037).
           jar_file: ${{ vars.SERVICE_TARGET_JAR || format('provider/{0}-azure/target/*-spring-boot.jar', vars.SERVICE_NAME || github.event.repository.name) }}
+
+      - name: "Acceptance Image (validate-only)"
+        # Same commit, no push: proves the suite's go-offline build before the trusted lane
+        # bakes it for real. Skips itself cleanly when no acceptance suite module exists.
+        uses: ./.github/actions/acceptance-image
+        with:
+          push: 'false'
+          image_name: ${{ vars.SERVICE_NAME || github.event.repository.name }}
 
   docker-push:
     name: "🐳 Docker Push"
@@ -334,6 +343,9 @@ jobs:
     outputs:
       image_repository: ${{ steps.push.outputs.image_repository }}
       image_digest: ${{ steps.push.outputs.image_digest }}
+      acceptance_image_repository: ${{ steps.acceptance.outputs.image_repository }}
+      acceptance_image_digest: ${{ steps.acceptance.outputs.image_digest }}
+      acceptance_skipped: ${{ steps.acceptance.outputs.skipped }}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         with:
@@ -350,6 +362,17 @@ jobs:
           # module name (e.g. entitlements-v2-azure) doesn't match, so a fresh fork needs no variable.
           # SERVICE_NAME falls back to the repo name; SERVICE_TARGET_JAR forces a specific path (ADR-037).
           jar_file: ${{ vars.SERVICE_TARGET_JAR || format('provider/{0}-azure/target/*-spring-boot.jar', vars.SERVICE_NAME || github.event.repository.name) }}
+
+      - name: "Acceptance Image Build and Push"
+        # The suite ships as an image from the same commit as the service image (design §8, D5):
+        # ghcr.io/<org>/<svc>-acceptance:sha-<sha>. Rides this job to inherit the ADR-036 trust
+        # gate; skips itself cleanly when no acceptance suite module exists.
+        id: acceptance
+        uses: ./.github/actions/acceptance-image
+        with:
+          push: 'true'
+          image_name: ${{ vars.SERVICE_NAME || github.event.repository.name }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
   code-validation:
     name: "✅ Code Quality Checks"
@@ -552,5 +575,8 @@ jobs:
           fi
           if [ "${{ needs.docker-build.result }}" = "failure" ] || [ "${{ needs.docker-build.result }}" = "cancelled" ]; then
             echo "❌ Docker build failed or was cancelled"; exit 1
+          fi
+          if [ "${{ github.event_name }}" = "pull_request_target" ]; then
+            echo "✅ Docker Build deferred - the sync lane leaves image validation to the cascade PR"; exit 0
           fi
           echo "✅ Docker Build checks completed successfully"
