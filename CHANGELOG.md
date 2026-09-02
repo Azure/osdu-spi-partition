@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.3.0](https://github.com/Azure/osdu-spi-partition/compare/v1.2.0...v1.3.0) (2026-09-02)
+
+
+### ✨ Features
+
+* Sync upstream changes from c4841a26 ([2becd5d](https://github.com/Azure/osdu-spi-partition/commit/2becd5d80528e8d2f2ce616c727379dcd527f4c1))
+
+
+### 🔧 Miscellaneous
+
+* Generate filtered upstream tree ([d705ebe](https://github.com/Azure/osdu-spi-partition/commit/d705ebe1551e5602a604fa2276863fd0e2d287a1))
+* Remove AWS provider and AWS CI/CD ([c4841a2](https://github.com/Azure/osdu-spi-partition/commit/c4841a266e8b9cf22abdddcaceef70d73a8e341b))
+* Remove AWS provider and AWS CI/CD ([78d2ab3](https://github.com/Azure/osdu-spi-partition/commit/78d2ab36baac41a230dc7a4c8b523e892969ddc5))
+* Sync template updates ([214aac1](https://github.com/Azure/osdu-spi-partition/commit/214aac160517afbb8475009420f3df665c429a7f))
+* Sync template updates ([9ad5ea7](https://github.com/Azure/osdu-spi-partition/commit/9ad5ea79af6478f3a6e79c70bec49b5626838a66))
+* Sync template updates ([26bbfda](https://github.com/Azure/osdu-spi-partition/commit/26bbfda2a80fd1bd08db4007a1abe791012f7536))
+* Sync template updates ([b69a7a3](https://github.com/Azure/osdu-spi-partition/commit/b69a7a3c7ed542c35b82167168a5b78d788fa91c))
+* Sync template updates ([bbdf5cd](https://github.com/Azure/osdu-spi-partition/commit/bbdf5cde2ba2eecb88bbfa74d87f8393069fb60c))
+* Sync template updates ([59e985e](https://github.com/Azure/osdu-spi-partition/commit/59e985e67b9b49746261a9a0c7b3d028ae21bc90))
+* Sync template updates ([fe6d4fe](https://github.com/Azure/osdu-spi-partition/commit/fe6d4fe4fb2f37756f5cecb93e9cff2ba9274956))
+* Sync template updates ([4674d7a](https://github.com/Azure/osdu-spi-partition/commit/4674d7aaf651e718c2dcfd3046bf4e9292c26f3f))
+* Sync template updates ([1048069](https://github.com/Azure/osdu-spi-partition/commit/10480694fbd8ec3d064f0a47ffe26beed5e524a8))
+* Sync template updates ([7cce461](https://github.com/Azure/osdu-spi-partition/commit/7cce46138916a04fc0faba463eff62fb012c099d))
+* Sync template updates 2026-08-27 ([69087e2](https://github.com/Azure/osdu-spi-partition/commit/69087e2bbf1643adfd30f6319e8830c7e4b9f8dd))
+* **template-sync:** Sync template updates (updated 2026-08-29) ([868e5cd](https://github.com/Azure/osdu-spi-partition/commit/868e5cde89d7137c711e52e17de0450517968292))
+* **template-sync:** Sync template updates (updated 2026-08-31) ([f7d5464](https://github.com/Azure/osdu-spi-partition/commit/f7d546449a53152f9a1ea616c750768356101374))
+* **template-sync:** Sync template updates (updated 2026-09-01) ([671f6e0](https://github.com/Azure/osdu-spi-partition/commit/671f6e00bc24ae3d7110bd91d5f97c20d96d73fb))
+* **template-sync:** Sync template updates 2026-08-27 ([ac1c9ea](https://github.com/Azure/osdu-spi-partition/commit/ac1c9ea1196986e25103b87d4ad67da4efc66f9d))
+* **template-sync:** Sync template updates 2026-08-27 ([3bc9a6e](https://github.com/Azure/osdu-spi-partition/commit/3bc9a6e2193a6372a63056c03b0be0ccdf78cc65))
+* **template-sync:** Sync template updates 2026-08-27 ([c09a385](https://github.com/Azure/osdu-spi-partition/commit/c09a385cb0cd8c6fb2aba9ce26b08b403eb41d75))
+* **template-sync:** Sync template updates 2026-08-28 ([41c127b](https://github.com/Azure/osdu-spi-partition/commit/41c127b41c32c9d938c4b138ed0488adc6e20b95))
+* **template-sync:** Sync template updates 2026-08-30 ([893b770](https://github.com/Azure/osdu-spi-partition/commit/893b77023617b36fb07e0de067b6428b76259205))
+* **template-sync:** Sync template updates 2026-09-02 ([3a5690d](https://github.com/Azure/osdu-spi-partition/commit/3a5690da3147d022ca9a2402858cd7b96e4688cf))
+
 ## [1.2.0](https://github.com/Azure/osdu-spi-partition/compare/v1.1.0...v1.2.0) (2026-08-27)
 
 
