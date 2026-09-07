@@ -29,7 +29,7 @@
 	</parent>
 
 	<properties>
-		<kotlin_stdlib_version>1.3.72</kotlin_stdlib_version>
+		<kotlin_stdlib_version>1.6.0</kotlin_stdlib_version>
 		<commons-beanutils.version>1.11.0</commons-beanutils.version>
 		<!-- Test Scoped Versions -->
 		<assertj_core_version>3.27.7</assertj_core_version>
