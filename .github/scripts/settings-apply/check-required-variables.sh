@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
-# Checks that the secrets and variables the deploy and integration-test checks
-# need are present (names only, never values), and keeps one human-required
-# tracking issue in step with what is missing.
+# Checks that the five values the deploy lane needs are present (names only,
+# never values) and keeps one human-required tracking issue in step with what
+# is missing. `spi onboard` writes all five; a fork without them skips the
+# lane with a visible reason rather than failing.
 #
 # SERVICE_NAME, MAVEN_PROFILE, and SERVICE_TARGET_JAR are not listed: they
 # default at runtime (ADR-035, ADR-037), so only overrides use them.
@@ -12,7 +13,10 @@
 #   --dry-run     Print the assessment without touching the issue
 #
 # Environment:
-#   GH_TOKEN      repo admin (secret and variable names) plus issues:write
+#   GH_TOKEN      issues:write, plus repo admin for the name-listing fallback
+#   HAVE_<NAME>   "true"/"false" from workflow context, authoritative when set. The name
+#                 listing below is only for local runs: the App installation may not
+#                 carry Secrets: read, and org-level values never appear in it.
 
 set -euo pipefail
 
@@ -29,19 +33,33 @@ export GH_TOKEN="${GH_TOKEN:-}"
 
 ISSUE_TITLE="⚙️ Deploy onboarding: required CI configuration missing"
 
-secret_names="$(gh api --paginate "repos/${REPO}/actions/secrets" --jq '.secrets[].name' 2>/dev/null || echo "")"
-variable_names="$(gh api --paginate "repos/${REPO}/actions/variables" --jq '.variables[].name' 2>/dev/null || echo "")"
+REQUIRED_SECRETS=(AZURE_CLIENT_ID)
+REQUIRED_VARS=(AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID SPI_STACK_RESOURCE_GROUP SPI_STACK_CLUSTER)
+
+flagged() { local flag="HAVE_$1"; [[ -n "${!flag:-}" ]]; }
+
+# Only a run without flags (local, or an older workflow) needs the name listings.
+secret_names=""; variable_names=""
+for n in "${REQUIRED_SECRETS[@]}" "${REQUIRED_VARS[@]}"; do
+  if ! flagged "$n"; then
+    secret_names="$(gh api --paginate "repos/${REPO}/actions/secrets" --jq '.secrets[].name' 2>/dev/null \
+      || { echo "secret listing unavailable; relying on HAVE_* flags" >&2; echo ""; })"
+    variable_names="$(gh api --paginate "repos/${REPO}/actions/variables" --jq '.variables[].name' 2>/dev/null || echo "")"
+    break
+  fi
+done
 
 missing=()
-have_secret() { grep -qx "$1" <<< "$secret_names"; }
-have_var()    { grep -qx "$1" <<< "$variable_names"; }
+have() {
+  local flag="HAVE_$1"
+  if flagged "$1"; then [[ "${!flag}" == "true" ]]; else grep -qx "$1" <<< "$2"; fi
+}
 
-have_secret "AZURE_CLIENT_ID" || missing+=("secret \`AZURE_CLIENT_ID\` — set by \`spi onboard\`")
-for v in K8S_DEPLOYMENT_NAME K8S_CONTAINER_NAME; do
-  have_var "$v" || missing+=("variable \`$v\` — set by \`spi onboard\`")
+for s in "${REQUIRED_SECRETS[@]}"; do
+  have "$s" "$secret_names" || missing+=("secret \`$s\`, set by \`spi onboard\`")
 done
-for v in ACCEPTANCE_TEST_DIR ACCEPTANCE_TEST_SECRET_MAP ACCEPTANCE_TEST_DEPENDENCIES; do
-  have_var "$v" || missing+=("variable \`$v\` — set by the operator")
+for v in "${REQUIRED_VARS[@]}"; do
+  have "$v" "$variable_names" || missing+=("variable \`$v\`, set by \`spi onboard\`")
 done
 
 existing_issue="$(gh issue list --repo "$REPO" --state open --search "in:title \"$ISSUE_TITLE\"" --json number --jq '.[0].number // empty' 2>/dev/null || echo "")"
@@ -61,7 +79,7 @@ fi
 echo "⚠️ Missing ${#missing[@]} required item(s) for deploy onboarding:"
 printf '   - %s\n' "${missing[@]}"
 
-body="$(printf 'The deploy and integration-test required checks stay disabled until the following are set on this repository:\n\n'; printf -- '- [ ] %s\n' "${missing[@]}"; printf '\nBuild-side identity (`SERVICE_NAME`, `MAVEN_PROFILE`, `SERVICE_TARGET_JAR`) defaults at runtime and is not required.\n\n_Maintained automatically by `settings-apply.yml`._\n')"
+body="$(printf 'The Deploy and Test lane skips until the following are set on this repository:\n\n'; printf -- '- [ ] %s\n' "${missing[@]}"; printf '\nBuild-side identity (`SERVICE_NAME`, `MAVEN_PROFILE`, `SERVICE_TARGET_JAR`) defaults at runtime and is not required.\n\n_Maintained automatically by `settings-apply.yml`._\n')"
 
 if [[ "$DRY_RUN" == "true" ]]; then
   echo "DRY-RUN would $( [[ -n "$existing_issue" ]] && echo "update issue #$existing_issue" || echo "open a human-required issue" )"
