@@ -1,0 +1,26 @@
+schemaVersion: 3
+service:
+  name: partition
+  archetype: java-maven-azure
+tests:
+  acceptance:
+    type: maven
+    path: partition-acceptance-test
+    mavenArguments: [test]
+    timeoutMinutes: 15
+    bindings:
+      HOST: { source: gateway }
+      DATA_PARTITION_ID: { source: partition }
+      PRIVILEGED_USER_TOKEN: { source: token }
+  integration:
+    type: maven
+    path: testing
+    mavenArguments: [-pl, partition-test-azure, -am, test]
+    timeoutMinutes: 20
+    bindings:
+      ENVIRONMENT: { source: static, value: dev }
+      PARTITION_BASE_URL: { source: gateway, suffix: / }
+      MY_TENANT: { source: partition }
+      CLIENT_TENANT: { source: partition }
+      INTEGRATION_TESTER_ACCESS_TOKEN: { source: token }
+      NO_DATA_ACCESS_TESTER_ACCESS_TOKEN: { source: noAccessToken }
