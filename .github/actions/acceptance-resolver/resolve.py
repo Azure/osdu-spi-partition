@@ -24,7 +24,7 @@ import os
 import re
 import sys
 
-ENGINE_VERSION = "1.0.0"
+ENGINE_VERSION = "1.1.0"
 REPORT_SCHEMA = 1
 
 FACTS_API_VERSION = "spi.osdu.dev/v1"
@@ -39,18 +39,32 @@ PATH_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,119}$")
 TEMPLATE_REF_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]{0,127})\}")
 KEYVAULT_SOURCE_RE = re.compile(r"^keyvault:([A-Za-z0-9][A-Za-z0-9-]{0,126})$")
 
-FACT_SOURCES = ("gateway", "partition", "openid", "tenant", "legalTag")
+FACT_SOURCES = ("gateway", "partition", "openid", "tenant", "legalTag", "domain")
+SUITE_NAME_RE = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 VALUE_SOURCES = ("static", "template")
-SOURCE_VOCABULARY = FACT_SOURCES + VALUE_SOURCES + ("user", "keyvault:<name>")
+CALLER_SOURCES = ("user", "token", "memberToken", "noAccessToken")
+SOURCE_VOCABULARY = FACT_SOURCES + VALUE_SOURCES + CALLER_SOURCES + ("keyvault:<name>",)
+# The bearers the caller minted for this run; the inputs the resolver takes from
+# its own reserved prefix rather than from a binding name.
+TOKEN_ENV = "RESOLVER_TOKEN"
+MEMBER_TOKEN_ENV = "RESOLVER_MEMBER_TOKEN"
+NO_ACCESS_TOKEN_ENV = "RESOLVER_NO_ACCESS_TOKEN"
+TOKEN_SOURCES = {
+    "token": (TOKEN_ENV, "the caller's bearer (spi token)"),
+    "memberToken": (MEMBER_TOKEN_ENV, "the member identity's bearer (spi token --member)"),
+    "noAccessToken": (NO_ACCESS_TOKEN_ENV, "the no-access identity's bearer (spi token --no-access)"),
+}
 
 # `partition` and `legalTag` read the primary entry of the partitions list
 # (legal tags are partition-scoped). openid is the issuer URL the stack
-# publishes, never derived from tenant_id here. A fact the stack does not
+# publishes, never derived from tenant_id here. domain is the entitlements
+# domain the stack publishes as entitlements_domain. A fact the stack does not
 # publish yet resolves as env-not-ready.
 FACT_PATHS = {
     "gateway": ("base_url",),
     "openid": ("azure", "openid_issuer"),
     "tenant": ("azure", "tenant_id"),
+    "domain": ("entitlements_domain",),
 }
 PARTITION_FACT_KEYS = {"partition": "name", "legalTag": "legal_tag"}
 VAULT_NAME_PATH = ("azure", "keyvault")
@@ -317,7 +331,7 @@ def _validate_binding(name, binding, where):
         raise Halt("DESCRIPTOR_INVALID", f"{where}.source must be a string")
 
     keyvault = KEYVAULT_SOURCE_RE.fullmatch(source)
-    if source not in FACT_SOURCES + VALUE_SOURCES + ("user",) and not keyvault:
+    if source not in FACT_SOURCES + VALUE_SOURCES + CALLER_SOURCES and not keyvault:
         raise Halt(
             "UNKNOWN_SOURCE",
             f"{where}.source '{source}' is not in the source vocabulary: "
@@ -345,10 +359,10 @@ def _validate_binding(name, binding, where):
                    f"{where}.value is only valid for sources static and template")
 
     if "default" in binding:
-        if keyvault:
+        if keyvault or source in TOKEN_SOURCES:
             # A default for a secret would put a secret value in the repository.
             raise Halt("DESCRIPTOR_INVALID",
-                       f"{where}.default is not valid for keyvault sources")
+                       f"{where}.default is not valid for source {source}")
         if source in VALUE_SOURCES:
             raise Halt("DESCRIPTOR_INVALID",
                        f"{where}.default is not valid for source {source}")
@@ -366,7 +380,7 @@ def _validate_binding(name, binding, where):
     return source
 
 
-def validate_descriptor(data):
+def validate_descriptor(data, suite="acceptance"):
     _require_keys(data, ("schemaVersion", "service", "tests"),
                   ("schemaVersion", "service", "tests"), "descriptor")
     version = data["schemaVersion"]
@@ -394,11 +408,28 @@ def validate_descriptor(data):
     tests = data["tests"]
     if not isinstance(tests, dict):
         raise Halt("DESCRIPTOR_INVALID", "descriptor.tests must be a mapping")
-    _require_keys(tests, ("acceptance",), ("acceptance",), "descriptor.tests")
-    acceptance = tests["acceptance"]
+    if "acceptance" not in tests:
+        raise Halt("MISSING_KEY", "descriptor.tests.acceptance is required")
+    suites = {}
+    for suite_name in tests:
+        if not SUITE_NAME_RE.fullmatch(suite_name):
+            raise Halt("DESCRIPTOR_INVALID",
+                       f"descriptor.tests.{suite_name}: suite names are lowercase slugs")
+        suites[suite_name] = _validate_suite(service["name"], suite_name, tests[suite_name])
+    if suite not in suites:
+        raise Halt("DESCRIPTOR_INVALID",
+                   f"descriptor.tests declares no suite named '{suite}'; "
+                   "declared: " + ", ".join(sorted(suites)))
+    contract = dict(suites[suite])
+    contract["suite"] = suite
+    contract["suites"] = {name: suites[name]["test_dir"] for name in sorted(suites)}
+    return contract
+
+
+def _validate_suite(service_name, suite_name, acceptance):
     if not isinstance(acceptance, dict):
-        raise Halt("DESCRIPTOR_INVALID", "descriptor.tests.acceptance must be a mapping")
-    where = "descriptor.tests.acceptance"
+        raise Halt("DESCRIPTOR_INVALID", f"descriptor.tests.{suite_name} must be a mapping")
+    where = f"descriptor.tests.{suite_name}"
     _require_keys(
         acceptance,
         ("type", "path", "mavenArguments", "bindings", "keyVaultBindings",
@@ -476,7 +507,7 @@ def validate_descriptor(data):
         raise Halt("DESCRIPTOR_INVALID", f"{where}.timeoutMinutes must be between 1 and 180")
 
     return {
-        "service": service["name"],
+        "service": service_name,
         "test_type": acceptance["type"],
         "test_dir": path,
         "maven_arguments": maven_arguments,
@@ -644,6 +675,12 @@ def resolve(contract, facts, secrets, environ):
                 resolved[name] = binding["default"]
             else:
                 miss(name, "source user: the caller must set this variable")
+        elif source in TOKEN_SOURCES:
+            env_name, who = TOKEN_SOURCES[source]
+            if environ.get(env_name, ""):
+                resolved[name] = environ[env_name]
+            else:
+                miss(name, f"source {source}: set {env_name} to {who}")
         else:
             base = fact_value(facts, source)
             if base:
@@ -720,6 +757,8 @@ def build_report(mode, contract, facts, resolved, missing, agreement):
         "mode": mode,
         "service": contract["service"],
         "contract": {
+            "suite": contract["suite"],
+            "suites": contract["suites"],
             "test_type": contract["test_type"],
             "test_dir": contract["test_dir"],
             "maven_arguments": contract["maven_arguments"],
@@ -791,6 +830,8 @@ def main(argv=None):
     parser.add_argument("--expect-gateway", default="")
     parser.add_argument("--expect-partition", default="")
     parser.add_argument("--report", default="")
+    parser.add_argument("--suite", default="acceptance",
+                        help="which descriptor.tests suite to resolve (default: acceptance)")
     parser.add_argument("--contract-only", action="store_true",
                         help="validate the descriptor and report the contract; "
                              "no facts, no resolution, no env file")
@@ -822,7 +863,7 @@ def main(argv=None):
                 descriptor_text = stream.read()
         except (OSError, UnicodeDecodeError) as error:
             raise Halt("DESCRIPTOR_UNREADABLE", f"{args.descriptor}: {error}")
-        contract = validate_descriptor(parse_descriptor_yaml(descriptor_text))
+        contract = validate_descriptor(parse_descriptor_yaml(descriptor_text), args.suite)
         if args.contract_only:
             report = build_report(args.mode, contract, {}, {}, [], [])
             write_report(args.report, report)

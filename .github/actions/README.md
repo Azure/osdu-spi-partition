@@ -7,9 +7,8 @@ This directory contains reusable GitHub Actions components used across our workf
 ```
 .github/
 ├── actions/              # Composite and local actions
-│   ├── pr-status/       # PR Status Comment action
-│   │   ├── action.yml   # Action definition (required name)
-│   │   └── README.md    # Action-specific documentation
+│   ├── java-build/      # Maven build action
+│   │   └── action.yml   # Action definition (required name)
 │   └── README.md        # This file
 └── workflows/           # Reusable and standard workflows
     ├── build.yml        # Main build workflow
@@ -24,7 +23,7 @@ Located in subdirectories of `.github/actions/`, each with an `action.yml` file:
 - Must be in a directory with an `action.yml` file (GitHub requirement)
 - Can include additional resources (scripts, docs, etc.)
 - Suitable for publishing as standalone actions
-- Example: `pr-status/` for standardized PR comments
+- Example: `java-build/` for the standardized Maven build
 
 ### Reusable Workflows
 Located directly in `.github/workflows/` with `.yml` extension:
@@ -34,15 +33,15 @@ Located directly in `.github/workflows/` with `.yml` extension:
 
 ## Current Components
 
-### PR Status Action (`pr-status/`)
-- **Purpose**: Standardize PR status comments across workflows
-- **Type**: Composite action
-- **Usage**: Called by workflows to post consistent status updates
-
 ### Java Build Workflow (`java-build.yml`)
 - **Purpose**: Standardize Java project detection and building
 - **Type**: Reusable workflow
 - **Usage**: Called by other workflows that need Java build capabilities
+
+### Upstream-owned files (`upstream-owned-files/`)
+- **Purpose**: List the files a pull request changes that exist on `origin/fork_upstream`, the ADR-038 ownership split
+- **Type**: Composite action
+- **Usage**: `validate.yml` fails or notices on the result depending on the `port` label; `dependabot-validation.yml` closes a Dependabot PR on a non-empty result
 
 ## Conventions
 
