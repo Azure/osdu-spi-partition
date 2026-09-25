@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.1](https://github.com/Azure/osdu-spi-partition/compare/v1.3.0...v1.3.1) (2026-09-25)
+
+
+### 🔧 Miscellaneous
+
+* Sync template updates ([249c9cc](https://github.com/Azure/osdu-spi-partition/commit/249c9cc67a3ba23a38943f5fbc66aab741b4aebf))
+* Sync template updates ([77d45e7](https://github.com/Azure/osdu-spi-partition/commit/77d45e7ca14c641fa2bf3cf4dc59a5183963fd6d))
+* **template-sync:** Sync template updates (updated 2026-09-25) ([7a26aec](https://github.com/Azure/osdu-spi-partition/commit/7a26aecd80b830bd9c16bede82de770f275a1ea9))
+* **template-sync:** Sync template updates 2026-09-25 ([54146f1](https://github.com/Azure/osdu-spi-partition/commit/54146f13320cb8b1c3501a8621a1afaec95a4ee5))
+
 ## [1.3.0](https://github.com/Azure/osdu-spi-partition/compare/v1.2.0...v1.3.0) (2026-09-16)
 
 
