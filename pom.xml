@@ -36,7 +36,7 @@
     <spring-framework.version>6.2.19</spring-framework.version>
     <tomcat.version>10.1.59</tomcat.version>
     <log4j.version>2.25.5</log4j.version>
-    <jackson-databind.version>2.21.5</jackson-databind.version>
+    <jackson-databind.version>2.21.6</jackson-databind.version>
 
     <!-- Project Versions-->
     <lombok.version>1.18.42</lombok.version>
