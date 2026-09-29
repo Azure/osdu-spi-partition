@@ -13,7 +13,7 @@ top_level:
   .mvn: keep
   LICENSE: keep
   NOTICE: keep
-  README.md: keep
+  README.md: strip
   docs: keep
   partition-acceptance-test: keep
   partition-core: keep
