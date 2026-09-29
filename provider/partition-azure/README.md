@@ -1,145 +1,107 @@
-# Running Locally - Azure
+# Partition Service: Azure Provider
 
 > [!NOTE]
-> This is the Azure provider for the Partition service, maintained by Microsoft in [`Azure/osdu-spi-partition`](https://github.com/Azure/osdu-spi-partition). The shared service code comes from the OSDU community upstream. See [CONTRIBUTING.md](../../CONTRIBUTING.md) for which paths this repository owns. End-to-end tests against a deployed environment live in [`partition-acceptance-test`](../../partition-acceptance-test/README.md).
+> Shared service code comes from the [OSDU community upstream](https://community.opengroup.org/osdu/platform/system/partition).
 
-## Requirements
+Partition keeps the registry of data partitions and each partition's properties, which other services look up at request time to find that partition's Azure resources.
 
-In order to run this service locally, you will need the following:
-- JDK 17
-- [Maven 3.8.0+](https://maven.apache.org/download.cgi)
-- Lombok 1.18 or later
-- Azure infrastructure for the service, provisioned by [OSDU SPI Stack](https://github.com/Azure/osdu-spi-stack)
+## At a glance
 
-## General Tips
+| | |
+|---|---|
+| API base path | `/api/partition/v1/` |
+| Swagger UI | `/api/partition/v1/swagger` |
+| Health | `:8081/actuator/health` |
+| Depends on | None |
+| Azure resources | Table Storage (partition registry and properties), Key Vault, Redis |
+| Deployed by | [OSDU SPI Stack](https://github.com/Azure/osdu-spi-stack) (`software/stacks/osdu/services/partition.yaml`) |
 
-**Environment Variable Management**
-The following tools make environment variable configuration simpler
- - [direnv](https://direnv.net/) - for a shell/terminal environment
- - [EnvFile](https://plugins.jetbrains.com/plugin/7861-envfile) - for [Intellij IDEA](https://www.jetbrains.com/idea/)
+## Repository layout
 
-**Lombok**
-This project uses [Lombok](https://projectlombok.org/) for code generation. You may need to configure your IDE to take advantage of this tool.
- - [Intellij configuration](https://projectlombok.org/setup/intellij)
- - [VSCode configuration](https://projectlombok.org/setup/vscode)
- 
-### Environment Variables
+[CONTRIBUTING.md](../../CONTRIBUTING.md) explains where each kind of change belongs.
 
-In order to run the service locally, you will need to have the following environment variables defined.
+| Path | Owner | Contents |
+|---|---|---|
+| `partition-core/` | OSDU upstream | Shared service code |
+| `provider/partition-azure/` | This repository | Azure provider (this module) |
+| `partition-acceptance-test/` | OSDU upstream | End-to-end suite run against a deployed environment |
+| `testing/partition-test-azure/` | This repository | Azure integration tests |
+| `.spi/service.yaml` | This repository | How CI deploys and tests the service on SPI Stack |
 
-**Note** The following command can be useful to pull secrets from keyvault:
-```bash
-az keyvault secret show --vault-name $KEY_VAULT_NAME --name $KEY_VAULT_SECRET_NAME --query value -otsv
-```
+## Build
 
-**Required to run service**
-
-| name | value | description | sensitive? | source |
-| ---  | ---   | ---         | ---        | ---    |
-| `AZURE_TENANT_ID` | `********` | AD tenant to authenticate users from | yes | keyvault secret: `$KEYVAULT_URI/secrets/app-dev-sp-tenant-id` |
-| `AZURE_CLIENT_ID` | `********` | Identity to run the service locally. This enables access to Azure resources. You only need this if running locally | yes | keyvault secret: `$KEYVAULT_URI/secrets/app-dev-sp-username` |
-| `AZURE_CLIENT_SECRET` | `********` | Secret for `$AZURE_CLIENT_ID` | yes | keyvault secret: `$KEYVAULT_URI/secrets/app-dev-sp-password` |
-| `KEYVAULT_URI` | (non-secret) | KeyVault URI | no | output of infrastructure deployment |
-| `azure.activedirectory.app-resource-id` | `********` | AAD client application ID | yes | output of infrastructure deployment |
-| `azure.activedirectory.client-id` | `********` | AAD client application ID | yes | keyvault secret: `$KEYVAULT_URI/secrets/aad-client-id` |
-| `azure.activedirectory.AppIdUri` | `api://${azure.activedirectory.client-id}` | URI for AAD Application | no | -- |
-| `azure.activedirectory.session-stateless` | `true` | Flag run in stateless mode (needed by AAD dependency) | no | -- |
-| `appinsights_key` | `********` | Application Insights Instrumentation Key, required to hook AppInsights with Partition application | yes | keyvault secret: `$KEYVAULT_URI/secrets/appinsights-key` |
-| `cache.provider` | (non-secret) | Cache to be used (can use `vm` for local testing) | no | - |
-| `redis.ssl.enabled` | (non-secret) | `true` if connecting to redis cache with SSL enabled, `false` otherwise | no | -
-
-**Required to run integration tests**
-
-| name | value | description | sensitive? | source |
-| ---  | ---   | ---         | ---        | ---    |
-| `PARTITION_BASE_URL` | ex `http://localhost:8080/` | The host where the service is running. NO CONTEXT! | no | -- |
-| `ENVIRONMENT` | ex `LOCAL` | The environment name | no | LOCAL/HOSTED |
-| `MY_TENANT` | ex `opendes` | OSDU tenant used for testing | no | -- |
-| `CLIENT_TENANT` | ex `common` | Client tenant used for testing | no | -- |
-| `DEFAULT_PARTITION` | ex `opendes` | Default Tenant Name used bypasses Data Preperation and Teardown of tests | no | -- |
-| `AZURE_AD_TENANT_ID` | `********` | AD tenant to authenticate users from | yes | -- |
-| `INTEGRATION_TESTER` | `********` | System identity to assume for API calls. Note: this user must have entitlements configured already | no | -- |
-| `AZURE_TESTER_SERVICEPRINCIPAL_SECRET` | `********` | Secret for `$INTEGRATION_TESTER` | yes | -- |
-| `AZURE_AD_APP_RESOURCE_ID` | `********` | AAD client application ID | yes | output of infrastructure deployment |
-| `AZURE_AD_OTHER_APP_RESOURCE_ID` | `********` | AAD client application ID for another application | yes | -- |
-| `NO_DATA_ACCESS_TESTER` | `********` | Service principal ID of a service principal without entitlements | yes | `aad-no-data-access-tester-client-id` secret from keyvault |
-| `NO_DATA_ACCESS_TESTER_SERVICEPRINCIPAL_SECRET` | `********` | Secret for `$NO_DATA_ACCESS_TESTER` | yes | `aad-no-data-access-tester-secret` secret from keyvault |
-
-
-
-### Configure Maven
-
-Check that maven is installed:
-```bash
-$ mvn --version
-Apache Maven 3.8.0
-Maven home: /usr/share/maven
-Java version: 17.0.7
-...
-```
-
-
-### Build and run the application
-
-After configuring your environment as specified above, you can follow these steps to build and run the application. These steps should be invoked from the *repository root.*
+Requires Java 17 and Maven 3.8+. OSDU dependencies resolve from the public community registry through the settings file in `.mvn`:
 
 ```bash
-# build + test + install core service code
-$ mvn clean install
-
-# build + test + package azure service code
-$ (cd provider/partition-azure/ && mvn clean package)
-
-# run service
-#
-# Note: this assumes that the environment variables for running the service as outlined
-#       above are already exported in your environment.
-$ java -jar $(find provider/partition-azure/target/ -name '*-spring-boot.jar')
+mvn --settings .mvn/community-maven.settings.xml -P core,azure clean install
 ```
 
+The runnable jar lands at `provider/partition-azure/target/partition-azure-*-spring-boot.jar`.
 
-### Test the application
+## Configuration
 
-After the service has started it should be accessible via a web browser by visiting [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html). If the request does not fail, you can then run the integration tests.
+SPI Stack sets the service's environment from two places: the shared `osdu-config` ConfigMap and the service's own entry in [`services/partition.yaml`](https://github.com/Azure/osdu-spi-stack/blob/main/software/stacks/osdu/services/partition.yaml). Those files are the contract; the tables below list what Partition actually reads from them.
+
+**Shared, from `osdu-config`:**
+
+| Variable | Purpose |
+|---|---|
+| `AZURE_TENANT_ID` | Entra tenant |
+| `AAD_CLIENT_ID` | Application ID that caller tokens are issued for |
+| `KEYVAULT_URI` | Central Key Vault |
+| `SERVER_PORT` | HTTP port (`8080`) |
+| `APPINSIGHTS_KEY` | Telemetry |
+
+**Specific to Partition**, from `services/partition.yaml`:
+
+| Variable | Value on SPI Stack | Purpose |
+|---|---|---|
+| `SERVER_SERVLET_CONTEXTPATH` | `/api/partition/v1/` | API base path |
+| `AZURE_ISTIOAUTH_ENABLED` | `true` | Trust the mesh's token validation |
+| `REDIS_DATABASE` | `1` | Redis database index reserved for Partition |
+| `PARTITION_SPRING_LOGGING_LEVEL` | `DEBUG` | Log level for Spring web |
+
+The service authenticates to Azure with workload identity, which injects `AZURE_CLIENT_ID` and a federated token; there are no client secrets. Partition is the one service that does not resolve its storage through the Partition API: it reads the Table Storage endpoint from the Key Vault secret `tbl-storage-endpoint`. The Redis host comes from the Key Vault secret `redis-hostname`, over TLS on port `6380`.
+
+## Test
+
+| Suite | Where | Runs in CI | Run it yourself |
+|---|---|---|---|
+| Unit | `partition-core`, `provider/partition-azure` | Every pull request (Java Build) | `mvn ... install` from [Build](#build) |
+| Acceptance | [`partition-acceptance-test`](../../partition-acceptance-test/README.md) | Every pull request, against SPI Stack (Deploy and Test) | `spi test partition` |
+| Integration | `testing/partition-test-azure` | Every pull request, against SPI Stack (Deploy and Test) | `spi test partition --suite integration` |
+
+**Acceptance** calls the deployed service through the gateway as a privileged test identity. **Integration** is the Azure suite; it also exercises authorization, calling as both a privileged identity and one with no data access. Both gate a merge, and the bindings in `.spi/service.yaml` supply each suite's host, partition, and tokens. Against an environment you are connected to:
 
 ```bash
-# build + install integration test core
-$ (cd testing/partition-test-core/ && mvn clean install)
-
-# build + run Azure integration tests.
-#
-# Note: this assumes that the environment variables for integration tests as outlined
-#       above are already exported in your environment.
-$ (cd testing/partition-test-azure/ && mvn clean test)
+spi test partition --suite all          # the image and suites the environment is running
+spi test partition --suite all --source .   # this checkout's suites and descriptor
 ```
 
-A liveness check can also be performed at `http://localhost:8080/api/partition/v1/actuator/health`. Other apis can be found on the swagger page
+To call the API by hand, `spi token` mints a bearer token:
 
-## Debugging
+```bash
+curl -H "Authorization: Bearer $(spi token)" -H "data-partition-id: <partition>" \
+  https://<gateway>/api/partition/v1/partitions
+```
 
-Jet Brains - the authors of Intellij IDEA, have written an [excellent guide](https://www.jetbrains.com/help/idea/debugging-your-first-java-application.html) on how to debug java programs.
+## Deploy
 
-## Notes
+CI publishes the service image to GHCR. On a pull request, the Deploy and Test lane borrows an SPI Stack environment, runs the new image there, proves it with the declared suites, and restores the environment's own image, so a merge to `main` has already passed on real infrastructure. This repository does not own infrastructure; SPI Stack does.
 
-### System Partition
+To try a build by hand on an environment you are connected to, pin it by digest and release the pin when done:
 
-The Azure implementation of OSDU has a special partition called the system partition. This partition allows entitlements to be used to provide access to system artifacts, initially system schemas. This partition has no partition-specific infrastructure.
+```bash
+spi service pin partition --image ghcr.io/azure/osdu-spi-partition@sha256:<digest>
+spi service reset partition
+```
 
-The partition name "system" is reserved for the system partition and should NOT be used for a regular partition.
+## Service notes
+
+**System partition.** The Azure implementation reserves a partition named `system`. It lets entitlements govern access to system artifacts, initially the system schemas, and it has no partition-specific infrastructure. Do not create a regular partition with that name; `reserved_partition_name` sets it and defaults to `system`.
 
 ## License
+
 Copyright © Microsoft Corporation
 
-Copyright 2017-2020, Schlumberger
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Licensed under the [Apache License 2.0](../../LICENSE).
