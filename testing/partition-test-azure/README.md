@@ -1,3 +1,5 @@
+Copyright © Microsoft Corporation
+
 Copyright 2017-2020, Schlumberger
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +14,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-# Partition service integration tests
+# Partition service integration tests (Azure)
+
+This module is the Azure provider's integration test suite, maintained by Microsoft in this repository. For end-to-end tests against a deployed environment, see [`partition-acceptance-test`](../../partition-acceptance-test/README.md).
 
 Partition integration tests are refactored so that the business logic for integration tests resides in the `partition-test-core` module and provider specific logic and execution steps reside in provider module (e.g. `partition-test-azure`). To run the integration tests, the core module is built first and then the provider module is executed. Please read further to know more details.
 
 ### Dependencies needed to run the integration tests 
-* JDK8
+* JDK 17
 * Maven
-* Azure Devops access to slb-des-ext-collaboration organization. You need to generate a PAT that can access dependencies held in the Azure artifacts
 * Values for the following environment variables in Config.java
   
   ```
@@ -27,7 +30,7 @@ Partition integration tests are refactored so that the business logic for integr
    PARTITION_BASE_URL(service base URL )
    INTEGRATION_TESTER (service account key which has full api access)
    NO_DATA_ACCESS_TESTER (service account key which has not api access)
-   TESTER_SERVICEPRINCIPAL_SECRET (service principal secret)
+   AZURE_TESTER_SERVICEPRINCIPAL_SECRET (service principal secret)
    NO_DATA_ACCESS_TESTER_SERVICEPRINCIPAL_SECRET (service principal secret for no access)
    AZURE_AD_TENANT_ID (tenant id)
    AZURE_AD_APP_RESOURCE_ID (App resource Id) 
