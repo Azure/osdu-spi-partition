@@ -61,6 +61,7 @@ SPI Stack sets the service's environment from two places: the shared `osdu-confi
 | Variable | Value on SPI Stack | Purpose |
 |---|---|---|
 | `SERVER_SERVLET_CONTEXTPATH` | `/api/partition/v1/` | API base path |
+| `AZURE_PAAS_WORKLOADIDENTITY_ISENABLED` | `true` | Authenticate to Azure with workload identity |
 | `AZURE_ISTIOAUTH_ENABLED` | `true` | Trust the mesh's token validation |
 | `REDIS_DATABASE` | `1` | Redis database index reserved for Partition |
 | `PARTITION_SPRING_LOGGING_LEVEL` | `DEBUG` | Log level for Spring web |
@@ -71,11 +72,13 @@ The service authenticates to Azure with workload identity, which injects `AZURE_
 
 | Suite | Where | Runs in CI | Run it yourself |
 |---|---|---|---|
-| Unit | `partition-core`, `provider/partition-azure` | Every pull request (Java Build) | `mvn ... install` from [Build](#build) |
-| Acceptance | [`partition-acceptance-test`](../../partition-acceptance-test/README.md) | Every pull request, against SPI Stack (Deploy and Test) | `spi test partition` |
-| Integration | `testing/partition-test-azure` | Every pull request, against SPI Stack (Deploy and Test) | `spi test partition --suite integration` |
+| Unit | `partition-core`, `provider/partition-azure` | Pull requests (Java Build) | `mvn ... install` from [Build](#build) |
+| Acceptance | [`partition-acceptance-test`](../../partition-acceptance-test/README.md) | Pull requests, against SPI Stack (Deploy and Test) | `spi test partition` |
+| Integration | `testing/partition-test-azure` | Pull requests, against SPI Stack (Deploy and Test) | `spi test partition --suite integration` |
 
-**Acceptance** calls the deployed service through the gateway as a privileged test identity. **Integration** is the Azure suite; it also exercises authorization, calling as both a privileged identity and one with no data access. Both gate a merge, and the bindings in `.spi/service.yaml` supply each suite's host, partition, and tokens. Against an environment you are connected to:
+CI runs these on pull requests from this repository that change code. Documentation-only changes skip the build, and pull requests from forks build without deploying.
+
+**Acceptance** calls the deployed service through the gateway as a privileged test identity. **Integration** is the Azure suite; it also exercises authorization, calling as both a privileged identity and one with no data access. Both run in the lane, and the bindings in `.spi/service.yaml` supply each suite's host, partition, and tokens. Against an environment you are connected to:
 
 ```bash
 spi test partition --suite all          # the image and suites the environment is running
@@ -91,7 +94,7 @@ curl -H "Authorization: Bearer $(spi token)" -H "data-partition-id: <partition>"
 
 ## Deploy
 
-CI publishes the service image to GHCR. On a pull request, the Deploy and Test lane borrows an SPI Stack environment, runs the new image there, proves it with the declared suites, and restores the environment's own image, so a merge to `main` has already passed on real infrastructure. This repository does not own infrastructure; SPI Stack does.
+For a pull request from this repository that changes code, CI publishes the service image to GHCR and the Deploy and Test lane borrows an SPI Stack environment, runs the new image there, proves it with the declared suites, and restores the environment's own image, so code merged to `main` has already passed on real infrastructure. This repository does not own infrastructure; SPI Stack does.
 
 To try a build by hand on an environment you are connected to, pin it by digest and release the pin when done:
 
