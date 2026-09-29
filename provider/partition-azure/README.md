@@ -1,11 +1,15 @@
 # Running Locally - Azure
 
+> [!NOTE]
+> This is the Azure provider for the Partition service, maintained by Microsoft in [`Azure/osdu-spi-partition`](https://github.com/Azure/osdu-spi-partition). The shared service code comes from the OSDU community upstream. See [CONTRIBUTING.md](../../CONTRIBUTING.md) for which paths this repository owns. End-to-end tests against a deployed environment live in [`partition-acceptance-test`](../../partition-acceptance-test/README.md).
+
 ## Requirements
 
 In order to run this service locally, you will need the following:
 - JDK 17
 - [Maven 3.8.0+](https://maven.apache.org/download.cgi)
 - Lombok 1.18 or later
+- Azure infrastructure for the service, provisioned by [OSDU SPI Stack](https://github.com/Azure/osdu-spi-stack)
 
 ## General Tips
 
@@ -35,7 +39,7 @@ az keyvault secret show --vault-name $KEY_VAULT_NAME --name $KEY_VAULT_SECRET_NA
 | `AZURE_TENANT_ID` | `********` | AD tenant to authenticate users from | yes | keyvault secret: `$KEYVAULT_URI/secrets/app-dev-sp-tenant-id` |
 | `AZURE_CLIENT_ID` | `********` | Identity to run the service locally. This enables access to Azure resources. You only need this if running locally | yes | keyvault secret: `$KEYVAULT_URI/secrets/app-dev-sp-username` |
 | `AZURE_CLIENT_SECRET` | `********` | Secret for `$AZURE_CLIENT_ID` | yes | keyvault secret: `$KEYVAULT_URI/secrets/app-dev-sp-password` |
-| `KEYVAULT_URI` | (non-secret) | KeyVault URI | no | variable `AZURE_KEYVAULT_URI` from GitLab variable group `Azure Target Env - {{env}}` |
+| `KEYVAULT_URI` | (non-secret) | KeyVault URI | no | output of infrastructure deployment |
 | `azure.activedirectory.app-resource-id` | `********` | AAD client application ID | yes | output of infrastructure deployment |
 | `azure.activedirectory.client-id` | `********` | AAD client application ID | yes | keyvault secret: `$KEYVAULT_URI/secrets/aad-client-id` |
 | `azure.activedirectory.AppIdUri` | `api://${azure.activedirectory.client-id}` | URI for AAD Application | no | -- |
@@ -124,6 +128,8 @@ The Azure implementation of OSDU has a special partition called the system parti
 The partition name "system" is reserved for the system partition and should NOT be used for a regular partition.
 
 ## License
+Copyright © Microsoft Corporation
+
 Copyright 2017-2020, Schlumberger
 
 Licensed under the Apache License, Version 2.0 (the "License");
