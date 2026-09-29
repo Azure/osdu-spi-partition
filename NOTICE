@@ -26,7 +26,6 @@ The following software have components provided under the terms of this license:
 - Apache Commons IO (from http://commons.apache.org/io/, https://commons.apache.org/proper/commons-io/, https://repo1.maven.org/maven2/commons-io/commons-io)
 - Apache Commons Lang (from https://commons.apache.org/proper/commons-lang/)
 - Apache Commons Logging (from http://commons.apache.org/logging/, http://commons.apache.org/proper/commons-logging/, https://commons.apache.org/proper/commons-logging/)
-- Apache HTTP transport v2 for the Google HTTP Client Library for Java. (from https://github.com/googleapis/google-http-java-client, https://repo1.maven.org/maven2/com/google/http-client/google-http-client-apache-v2)
 - Apache HttpClient (from http://hc.apache.org/httpcomponents-client, http://hc.apache.org/httpcomponents-client-ga)
 - Apache HttpClient Cache (from http://hc.apache.org/httpcomponents-client, http://hc.apache.org/httpcomponents-client-ga)
 - Apache HttpCore (from http://hc.apache.org/httpcomponents-core-ga, http://hc.apache.org/httpcomponents-core-ga/, http://hc.apache.org/httpcomponents-core/)
@@ -47,10 +46,7 @@ The following software have components provided under the terms of this license:
 - Converter: Jackson (from https://github.com/square/retrofit, https://repo1.maven.org/maven2/com/squareup/retrofit2/converter-jackson)
 - Core functionality for the Reactor Netty library (from https://github.com/reactor/reactor-netty)
 - FindBugs-jsr305 (from http://findbugs.sourceforge.net/)
-- GSON extensions to the Google HTTP Client Library for Java. (from https://github.com/googleapis/google-http-java-client, https://repo1.maven.org/maven2/com/google/http-client/google-http-client-gson)
-- Google APIs Client Library for Java (from https://github.com/googleapis/google-api-java-client, https://repo1.maven.org/maven2/com/google/api-client/google-api-client)
 - Google HTTP Client Library for Java (from https://github.com/googleapis/google-http-java-client, https://repo1.maven.org/maven2/com/google/http-client/google-http-client)
-- Google OAuth Client Library for Java (from https://github.com/googleapis/google-oauth-java-client, https://repo1.maven.org/maven2/com/google/oauth-client/google-oauth-client)
 - Gson (from http://code.google.com/p/google-gson/, https://github.com/google/gson, https://repo1.maven.org/maven2/com/google/code/gson/gson)
 - Guava InternalFutureFailureAccess and InternalFutures (from https://github.com/google/guava, https://repo1.maven.org/maven2/com/google/guava/failureaccess)
 - Guava ListenableFuture only (from https://github.com/google/guava, https://repo1.maven.org/maven2/com/google/guava/listenablefuture)
@@ -73,7 +69,6 @@ The following software have components provided under the terms of this license:
 - JSONassert (from http://github.com/skyscreamer/yoga, https://github.com/skyscreamer/JSONassert)
 - JSR107 API and SPI (from https://github.com/jsr107/jsr107spec)
 - JSpecify annotations (from https://jspecify.dev/)
-- Jackson 2 extensions to the Google HTTP Client Library for Java. (from https://github.com/googleapis/google-http-java-client, https://repo1.maven.org/maven2/com/google/http-client/google-http-client-jackson2)
 - Jackson dataformat: CBOR (from http://github.com/FasterXML/jackson-dataformats-binary)
 - Jackson datatype: JSR310 (from http://wiki.fasterxml.com/JacksonModuleJSR310, https://github.com/FasterXML/jackson-modules-java8, https://repo1.maven.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310)
 - Jackson datatype: Joda (from http://wiki.fasterxml.com/JacksonModuleJoda, https://github.com/FasterXML/jackson-datatype-joda)
@@ -201,7 +196,6 @@ The following software have components provided under the terms of this license:
 - org.opentest4j:opentest4j (from https://github.com/ota4j-team/opentest4j)
 - org.xmlunit:xmlunit-core (from http://www.xmlunit.org/, https://www.xmlunit.org/)
 - resilience4j (from https://github.com/resilience4j/resilience4j, https://resilience4j.readme.io/, ttps://resilience4j.readme.io)
-- spring-boot-loader (from https://spring.io/projects/spring-boot)
 - spring-security-oauth2-client (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
 - spring-security-oauth2-core (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
 - spring-security-oauth2-jose (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
@@ -244,8 +238,6 @@ The following software have components provided under the terms of this license:
 - Angus Activation Registries (from https://repo1.maven.org/maven2/org/eclipse/angus/angus-activation)
 - AspectJ Weaver (from http://www.aspectj.org, https://www.eclipse.org/aspectj/)
 - FindBugs-jsr305 (from http://findbugs.sourceforge.net/)
-- Google APIs Client Library for Java (from https://github.com/googleapis/google-api-java-client, https://repo1.maven.org/maven2/com/google/api-client/google-api-client)
-- Google OAuth Client Library for Java (from https://github.com/googleapis/google-oauth-java-client, https://repo1.maven.org/maven2/com/google/oauth-client/google-oauth-client)
 - Hamcrest (from http://hamcrest.org/JavaHamcrest/)
 - Hamcrest Core (from http://hamcrest.org/, http://hamcrest.org/JavaHamcrest/, https://repo1.maven.org/maven2/org/hamcrest/hamcrest-core)
 - Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://github.com/jakartaee/jaf-api, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
@@ -328,9 +320,6 @@ EPL-1.0
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- Logback Contrib :: JSON :: Classic (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-json-classic)
-- Logback Contrib :: JSON :: Core (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-json-core)
-- Logback Contrib :: Jackson (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-jackson)
 - Logback Core Module (from http://logback.qos.ch, https://repo1.maven.org/maven2/ch/qos/logback/logback-core)
 
 ========================================================================
@@ -390,9 +379,6 @@ The following software have components provided under the terms of this license:
 
 - Javassist (from http://www.javassist.org/, https://www.javassist.org/)
 - Logback Classic Module (from http://logback.qos.ch, https://repo1.maven.org/maven2/ch/qos/logback/logback-classic)
-- Logback Contrib :: JSON :: Classic (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-json-classic)
-- Logback Contrib :: JSON :: Core (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-json-core)
-- Logback Contrib :: Jackson (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-jackson)
 - Logback Core Module (from http://logback.qos.ch, https://repo1.maven.org/maven2/ch/qos/logback/logback-core)
 
 ========================================================================

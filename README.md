@@ -16,10 +16,6 @@ The AWS provider has been removed from this repository.
 
 Instructions for running the Azure implementation locally can be found [here](./provider/partition-azure/README.md)
 
-## Running Locally - Google Cloud
-
-Instructions for running the Google Cloud implementation locally can be found [here](./provider/partition-gc/README.md)
-
 ## Running Locally - IBM
 
 ## Running Locally - Partition Core Plus
