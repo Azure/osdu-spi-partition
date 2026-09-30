@@ -58,13 +58,13 @@ SPI Stack sets the service's environment from two places: the shared `osdu-confi
 
 **Specific to Partition**, from `services/partition.yaml`:
 
-| Variable | Value on SPI Stack | Purpose |
-|---|---|---|
-| `SERVER_SERVLET_CONTEXTPATH` | `/api/partition/v1/` | API base path |
-| `AZURE_PAAS_WORKLOADIDENTITY_ISENABLED` | `true` | Authenticate to Azure with workload identity |
-| `AZURE_ISTIOAUTH_ENABLED` | `true` | Trust the mesh's token validation |
-| `REDIS_DATABASE` | `1` | Redis database index reserved for Partition |
-| `PARTITION_SPRING_LOGGING_LEVEL` | `DEBUG` | Log level for Spring web |
+| Variable and value on SPI Stack | Purpose |
+|---|---|
+| `SERVER_SERVLET_CONTEXTPATH`<br>`/api/partition/v1/` | API base path |
+| `AZURE_PAAS_WORKLOADIDENTITY_ISENABLED`<br>`true` | Authenticate to Azure with workload identity |
+| `AZURE_ISTIOAUTH_ENABLED`<br>`true` | Trust the mesh's token validation |
+| `REDIS_DATABASE`<br>`1` | Redis database index reserved for Partition |
+| `PARTITION_SPRING_LOGGING_LEVEL`<br>`DEBUG` | Log level for Spring web |
 
 The service authenticates to Azure with workload identity, which injects `AZURE_CLIENT_ID` and a federated token; there are no client secrets. Partition is the one service that does not resolve its storage through the Partition API: it reads the Table Storage endpoint from the Key Vault secret `tbl-storage-endpoint`. The Redis host comes from the Key Vault secret `redis-hostname`, over TLS on port `6380`. `REDIS_HOSTNAME` would override it, but SPI Stack leaves it unset.
 
