@@ -17,3 +17,5 @@
 /.spi/                          @Azure/azure-global-energy
 /.github/upstream-filter.yml    @Azure/azure-global-energy
 /.github/CODEOWNERS             @Azure/azure-global-energy
+/CONTRIBUTING.md                @Azure/azure-global-energy
+/README.md                      @Azure/azure-global-energy
