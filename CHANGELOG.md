@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.3.1](https://github.com/Azure/osdu-spi-partition/compare/v1.3.0...v1.3.1) (2026-10-06)
+
+
+### 🐛 Bug Fixes
+
+* Sync upstream changes from e3fa53b2 ([a9ff725](https://github.com/Azure/osdu-spi-partition/commit/a9ff72539321917de7c2df38af99bc10e9e63eee))
+* Sync upstream changes from e3fa53b2 ([7262489](https://github.com/Azure/osdu-spi-partition/commit/72624890faf2680e047d37f9c6ef62f8bcb9a684))
+
+
+### 📚 Documentation
+
+* **azure:** Add release, validate, and license badges to readme ([e88c6fe](https://github.com/Azure/osdu-spi-partition/commit/e88c6fe07fda7339c75a4353af996be5d46a3472))
+* **azure:** Clarify CI conditions in readme ([02aea17](https://github.com/Azure/osdu-spi-partition/commit/02aea17f271717708fad2efe1614e51004a04250))
+* **azure:** Clarify fork ownership in azure READMEs ([18117ba](https://github.com/Azure/osdu-spi-partition/commit/18117ba1f841513c5ca55b67db4dbabc60483132))
+* **azure:** Mark provider READMEs as Microsoft-maintained and fix stale setup ([9a0abdb](https://github.com/Azure/osdu-spi-partition/commit/9a0abdb7ff45acc812f60a87f9eca961c20210fc))
+* **azure:** Rewrite azure provider readme for spi stack ([cf97f59](https://github.com/Azure/osdu-spi-partition/commit/cf97f598ab2d6656938efb8285b9141ffc196b6b))
+* **azure:** Rewrite provider README in the standard SPI service format ([504c949](https://github.com/Azure/osdu-spi-partition/commit/504c949aa83acb175caae843264b78e933d8f6ec))
+* Clarify when deploy and test lane proves a change ([f916c23](https://github.com/Azure/osdu-spi-partition/commit/f916c23eb76a722b1fb96f8530aface3a3eb47b3))
+* Correct maven version requirement to 3.6.3+ ([2cdae00](https://github.com/Azure/osdu-spi-partition/commit/2cdae00f788de9f876b54542aa76bbcc2a333209))
+* Keep the configuration table inside the README width ([c0746e2](https://github.com/Azure/osdu-spi-partition/commit/c0746e2fc69e79e5ec40ebc5b1db3dbcea226b75))
+* Make the root README fork-owned and move the Azure documentation there ([ef62ee0](https://github.com/Azure/osdu-spi-partition/commit/ef62ee0a1a24c61502147b5dfa15fa0ebef621fe))
+* Merge variable and value columns in partition env table ([40fa9be](https://github.com/Azure/osdu-spi-partition/commit/40fa9be2f4333855696bc1bfa7daa02737b3d4ec))
+* Move azure provider readme to root readme ([85e031b](https://github.com/Azure/osdu-spi-partition/commit/85e031beb1e3fd03961bed1bb91e2886ad4b6d76))
+* Note REDIS_HOSTNAME override is left unset ([8bf8ce2](https://github.com/Azure/osdu-spi-partition/commit/8bf8ce2f8d07f74e55daf6ce0a389fde60c28dd1))
+
+
+### 🔧 Miscellaneous
+
+* Add license header to rotate-app-key.sh ([4c9c7ba](https://github.com/Azure/osdu-spi-partition/commit/4c9c7baf9d5adc32af3df708b3f51344075737d2))
+* Add license header to rotate-app-key.sh ([834111e](https://github.com/Azure/osdu-spi-partition/commit/834111eccaed5cdd8a9941a1aa9dad68e9651923))
+* **deps:** Bump com.fasterxml.jackson:jackson-bom ([074447e](https://github.com/Azure/osdu-spi-partition/commit/074447e8f152f92db6b533456ec9c08f80725388))
+* **deps:** Bump com.fasterxml.jackson:jackson-bom from 2.21.2 to 2.21.7 in /provider/partition-azure ([cb7b6d1](https://github.com/Azure/osdu-spi-partition/commit/cb7b6d10cfa641682e11b9c196316cd704942c0d))
+* Generate filtered upstream tree ([e02f975](https://github.com/Azure/osdu-spi-partition/commit/e02f975076ed03817bec5249ab506702fb4e8237))
+* Generate filtered upstream tree ([e36ee78](https://github.com/Azure/osdu-spi-partition/commit/e36ee789b40e1983f8a2d87b0ed1bafbe042e766))
+* Sync template updates ([9b44681](https://github.com/Azure/osdu-spi-partition/commit/9b446811363df9fa3ee54c506b304e61339ca1aa))
+* Sync template updates ([0403c33](https://github.com/Azure/osdu-spi-partition/commit/0403c33955179b850dd306b94847d77f097fc976))
+* Sync template updates ([249c9cc](https://github.com/Azure/osdu-spi-partition/commit/249c9cc67a3ba23a38943f5fbc66aab741b4aebf))
+* Sync template updates ([77d45e7](https://github.com/Azure/osdu-spi-partition/commit/77d45e7ca14c641fa2bf3cf4dc59a5183963fd6d))
+* **template-sync:** Sync template updates (updated 2026-09-25) ([7a26aec](https://github.com/Azure/osdu-spi-partition/commit/7a26aecd80b830bd9c16bede82de770f275a1ea9))
+* **template-sync:** Sync template updates (updated 2026-10-01) ([6371741](https://github.com/Azure/osdu-spi-partition/commit/6371741a0e07aaaa5f8d29b9a72c947de5911149))
+* **template-sync:** Sync template updates 2026-09-25 ([54146f1](https://github.com/Azure/osdu-spi-partition/commit/54146f13320cb8b1c3501a8621a1afaec95a4ee5))
+* **template-sync:** Sync template updates 2026-10-06 ([d1d0a15](https://github.com/Azure/osdu-spi-partition/commit/d1d0a15f6a2579dcc3a2515339e7df0881652f0d))
+
 ## [1.3.0](https://github.com/Azure/osdu-spi-partition/compare/v1.2.0...v1.3.0) (2026-09-16)
 
 
