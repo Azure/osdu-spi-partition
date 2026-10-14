@@ -139,8 +139,8 @@ public class OsmPartitionPropertyRepositoryTest {
         repo.saveAll(java.util.Arrays.asList(e1, e2));
 
         verify(context).beginTransaction(destination);
-        verify(context, times(1)).upsert(same(e1), eq(destination));
-        verify(context, times(1)).upsert(same(e2), eq(destination));
+        verify(context, times(1)).upsert(eq(destination), same(e1));
+        verify(context, times(1)).upsert(eq(destination), same(e2));
         verify(tx).commitIfActive();
         // finally-block always calls rollbackIfActive safely
         verify(tx).rollbackIfActive();
