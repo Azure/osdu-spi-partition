@@ -24,22 +24,52 @@
     <packaging>jar</packaging>
 
     <properties>
-        <java.version>17</java.version>
-        <maven.compiler.release>17</maven.compiler.release>
+        <java.version>25</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <os-core-test.version>1.1.0</os-core-test.version>
+        <junit.version>5.14.4</junit.version>
+        <lombok.version>1.18.42</lombok.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
         <allure.version>2.31.0</allure.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!--
+                cucumber-junit-platform-engine (from os-core-test) requires JUnit Platform 1.14.x.
+                Importing junit-bom here keeps the standalone module aligned with os-core-test.
+            -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--
+                commons-configuration2 (from os-core-test) needs ObjectUtils.getIfNull from
+                commons-lang3 >= 3.15.0. Pin so transitive resolution cannot pick an older one.
+            -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.20.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-test</artifactId>
-            <version>0.2.8</version>
+            <version>${os-core-test.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.42</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -50,12 +80,21 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.4</version>
+                <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <properties>
                         <property>

@@ -2,6 +2,13 @@
 
 The Partition service is responsible for creating and retrieving partition specific properties on behalf of other services whether they are secret values or not. It is a Maven multi-module project with each cloud implementation placed in its submodule.
 
+## Prerequisites
+
+- [JDK 25](https://adoptium.net/)
+- [Maven 3.9.16+](https://maven.apache.org/download.cgi)
+
+Community / core-plus modules compile and run on Java 25. For core-plus local setup, see [partition-core-plus/README.md](./partition-core-plus/README.md).
+
 ## Community Implementation
 It is containing an Open-Source version with os-osm Driver containing the postgres db for consumption. As of now the code is not having any authentication for core-plus as it is not having the infra for authentication.
 So, currently it's only enough to run and consume the service locally, for development and understanding purpose.
