@@ -19,14 +19,13 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>partition-azure</artifactId>
-  <version>0.31.0-SNAPSHOT</version>
   <description>Partition service on Azure</description>
   <packaging>jar</packaging>
 
   <parent>
     <artifactId>partition</artifactId>
     <groupId>org.opengroup.osdu</groupId>
-    <version>0.31.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -72,7 +71,7 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>partition-core</artifactId>
-      <version>${project.version}</version>
+      <version>${revision}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
