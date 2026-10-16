@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.3.2](https://github.com/Azure/osdu-spi-partition/compare/v1.3.1...v1.3.2) (2026-10-16)
+
+
+### 🐛 Bug Fixes
+
+* **azure:** Inherit jacoco 0.8.14 from parent for java 25 support ([667ce78](https://github.com/Azure/osdu-spi-partition/commit/667ce788b1b9b85f63c0892d09fb98a191d71323))
+* **azure:** Inherit jacoco 0.8.14 from parent for java 25 support ([f818d27](https://github.com/Azure/osdu-spi-partition/commit/f818d27dc8f0b8c98151fa4a77b35866d29d109b))
+* **azure:** Upgrade core-lib-azure to 3.0.4 ([ba850e7](https://github.com/Azure/osdu-spi-partition/commit/ba850e7c0a4a88ad8c6243521ba87716e04c40bd))
+* **azure:** Upgrade core-lib-azure to 3.0.4 ([bea2ada](https://github.com/Azure/osdu-spi-partition/commit/bea2adaa434ab7fd0056441c57cbeac8b04f12f6))
+* Sync upstream changes from d5338656 ([07c3a47](https://github.com/Azure/osdu-spi-partition/commit/07c3a4786fc31227047caf9ef55650177a94803e))
+
+
+### 🔧 Miscellaneous
+
+* Generate filtered upstream tree ([774085d](https://github.com/Azure/osdu-spi-partition/commit/774085d6c4808f72a11c772cb793d5cd0af5fd99))
+* Sync template updates ([82743f5](https://github.com/Azure/osdu-spi-partition/commit/82743f5e74a81d0d115973034633b31344e9868f))
+* Sync template updates ([eb7a9b9](https://github.com/Azure/osdu-spi-partition/commit/eb7a9b98e403a7c329557b9758c0cd8736bcc223))
+* Sync template updates ([106530c](https://github.com/Azure/osdu-spi-partition/commit/106530c99367ee065def80132c4ba17eb97fc103))
+* **template-sync:** Sync template updates (updated 2026-10-12) ([db83821](https://github.com/Azure/osdu-spi-partition/commit/db838218f328ad2adf958ac832c2c111c42b026f))
+* **template-sync:** Sync template updates (updated 2026-10-13) ([3c1f7ab](https://github.com/Azure/osdu-spi-partition/commit/3c1f7ab47aae760713b41c443e336d0df28665b4))
+* **template-sync:** Sync template updates 2026-10-14 ([4e7a51f](https://github.com/Azure/osdu-spi-partition/commit/4e7a51fa4ac0be52d6a0affdc6f7c8b8569e3b3c))
+
 ## [1.3.1](https://github.com/Azure/osdu-spi-partition/compare/v1.3.0...v1.3.1) (2026-10-06)
 
 
