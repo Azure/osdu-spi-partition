@@ -26,6 +26,7 @@ hs_err_pid*
 
 target/
 bin/
+.flattened-pom.xml
 load-tests/*.pyc
 # Eclipse
 .classpath
