@@ -31,7 +31,7 @@
   </parent>
 
   <properties>
-    <core-lib-azure.version>3.0.4</core-lib-azure.version>
+    <core-lib-azure.version>4.0.0</core-lib-azure.version>
     <!-- Plugin Versions -->
     <surefire-plugin.version>3.5.4</surefire-plugin.version>
     <jackson.version>2.21.7</jackson.version>
@@ -158,6 +158,16 @@
       <scope>runtime</scope>
     </dependency>
   </dependencies>
+
+  <repositories>
+    <repository>
+      <id>spi-packages</id>
+      <url>https://osduspipackages.z1.web.core.windows.net/maven</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
   <!-- Build Configuration -->
   <build>
