@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.3.3](https://github.com/Azure/osdu-spi-partition/compare/v1.3.2...v1.3.3) (2026-10-20)
+
+
+### 🐛 Bug Fixes
+
+* **azure:** Upgrade core-lib-azure to 4.0.0 ([000edc0](https://github.com/Azure/osdu-spi-partition/commit/000edc03d7281f25e3ca7408c41ac68ddf9b0c4e))
+* **azure:** Upgrade core-lib-azure to 4.0.0 ([5dbd092](https://github.com/Azure/osdu-spi-partition/commit/5dbd09221bc04db0b83f7aba44edefbb47dd3ac7))
+* Sync upstream changes from 68c087c2 ([a976c50](https://github.com/Azure/osdu-spi-partition/commit/a976c5078ab61be87ded9ae3cfa497b243e6a7be))
+* Sync upstream changes from a2c4f7b7 ([3d00998](https://github.com/Azure/osdu-spi-partition/commit/3d0099877e3a537efa4611e0a42d8f98caf5e02d))
+
+
+### 🔧 Miscellaneous
+
+* Generate filtered upstream tree ([ec38961](https://github.com/Azure/osdu-spi-partition/commit/ec3896150951899976d9669fe79d1cad3fb8ad3e))
+* Generate filtered upstream tree ([2b254e1](https://github.com/Azure/osdu-spi-partition/commit/2b254e19c36495e4e513f113c8fd3288236b3da7))
+* Remove Azure provider and Azure CI/CD ([a2c4f7b](https://github.com/Azure/osdu-spi-partition/commit/a2c4f7b70aface9610bd04db3801abbbee88ce05))
+* Remove Azure provider and Azure CI/CD ([de7e552](https://github.com/Azure/osdu-spi-partition/commit/de7e552f8ce12909b69b14f8ffdd2c91414f8831))
+* Stamp fork-owned pom versions ([8043e60](https://github.com/Azure/osdu-spi-partition/commit/8043e60e019ef6a97e7260240827fb09983c1e08))
+* Sync template updates ([3004bc0](https://github.com/Azure/osdu-spi-partition/commit/3004bc04422449b3aceb7bbba27e95e2465ab8a0))
+* **template-sync:** Sync template updates 2026-10-20 ([01accc1](https://github.com/Azure/osdu-spi-partition/commit/01accc1065d264ec8de4ef94c176444da2962438))
+
 ## [1.3.2](https://github.com/Azure/osdu-spi-partition/compare/v1.3.1...v1.3.2) (2026-10-16)
 
 
