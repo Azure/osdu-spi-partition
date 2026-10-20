@@ -1,9 +1,6 @@
 variables:
   CORE_BUILD_SUBDIR: partition-core
 
-  AZURE_SERVICE: partition
-  AZURE_BUILD_SUBDIR: provider/partition-azure
-  AZURE_TEST_SUBDIR: testing/partition-test-azure
   # Full Docker Hub tag after "maven:" — flip to ...-temurin-25 for Java 25 compile/test.
   # Keep in sync with SERVICE_JAVA_VERSION (plugin-download jobs).
   # Dependency scanning: SBOM early-mover (sbom-maven.yml); do not set DS_JAVA_VERSION: "25".
@@ -38,13 +35,7 @@ include:
     file: "scanners/fossa-maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/azure.yml"
-
-  - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/cimpl-global.yml"
-
-  - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/azure-one-pipeline.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "reporting/schemathesis.yml"
