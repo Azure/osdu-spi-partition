@@ -19,10 +19,6 @@ One could either spin up a postgres docker container locally, and use along with
 
 The AWS provider has been removed from this repository.
 
-## Running Locally - Azure
-
-Instructions for running the Azure implementation locally can be found [here](./provider/partition-azure/README.md)
-
 ## Running Locally - IBM
 
 ## Running Locally - Partition Core Plus
@@ -42,7 +38,7 @@ All the Swagger and OpenAPI related common properties are managed here [swagger.
 #### Server Url(full path vs relative path) configuration
 - `api.server.fullUrl.enabled=true` It will generate full server url in the OpenAPI swagger
 - `api.server.fullUrl.enabled=false` It will generate only the contextPath only
-- default value is false (Currently only in Azure it is enabled)
+- default value is false
 [Reference]:(https://springdoc.org/faq.html#_how_is_server_url_generated) 
 
 ## License

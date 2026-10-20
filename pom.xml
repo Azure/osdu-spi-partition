@@ -329,7 +329,6 @@
                     <exclude>org.opengroup.osdu:partition</exclude>
                     <exclude>org.opengroup.osdu:partition-core</exclude>
                     <exclude>org.opengroup.osdu:partition-core-plus</exclude>
-                    <exclude>org.opengroup.osdu:partition-azure</exclude>
                     <exclude>org.opengroup.osdu:partition-ibm</exclude>
                     <!-- CSP (IBM): transitive SNAPSHOT via os-core-lib-ibm; drop when IBM migrates. -->
                     <exclude>org.opengroup.osdu:os-core-common-spring6</exclude>
@@ -425,12 +424,6 @@
       <modules>
         <module>partition-core</module>
         <module>partition-core-plus</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>azure</id>
-      <modules>
-        <module>provider/partition-azure</module>
       </modules>
     </profile>
     <profile>

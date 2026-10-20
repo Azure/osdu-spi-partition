@@ -1,7 +1,7 @@
 
 # Partition service integration tests 
 
-Partition integration tests are refactored so that the business logic for integration tests resides in the `partition-test-core` module and provider specific logic and execution steps reside in provider module (e.g. `partition-test-azure`). To run the integration tests, the core module is built first and then the provider module is executed. Please read further to know more details.
+Partition integration tests are refactored so that the business logic for integration tests resides in the `partition-test-core` module and provider specific logic and execution steps reside in provider module (e.g. `partition-test-ibm`). To run the integration tests, the core module is built first and then the provider module is executed. Please read further to know more details.
 
 ### Dependencies needed to run the integration tests 
 * JDK8
