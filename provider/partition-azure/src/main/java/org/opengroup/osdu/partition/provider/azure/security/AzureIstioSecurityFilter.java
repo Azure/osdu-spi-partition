@@ -59,7 +59,7 @@ public class AzureIstioSecurityFilter extends OncePerRequestFilter {
 
         try {
             if (hasText(istioPayload)) {
-                JWTClaimsSet claimsSet = JWTClaimsSet.parse(new String(Base64.getDecoder().decode(istioPayload)));
+                JWTClaimsSet claimsSet = JWTClaimsSet.parse(new String(Base64.getUrlDecoder().decode(istioPayload)));
 
                 // By default the authenticated is set to true as part PreAuthenticatedAuthenticationToken constructor.
                 SecurityContextHolder
