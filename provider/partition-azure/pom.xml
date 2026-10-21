@@ -159,16 +159,6 @@
     </dependency>
   </dependencies>
 
-  <repositories>
-    <repository>
-      <id>spi-packages</id>
-      <url>https://osduspipackages.z1.web.core.windows.net/maven</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-
   <!-- Build Configuration -->
   <build>
     <plugins>
