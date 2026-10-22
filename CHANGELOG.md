@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.3.4](https://github.com/Azure/osdu-spi-partition/compare/v1.3.3...v1.3.4) (2026-10-22)
+
+
+### 🐛 Bug Fixes
+
+* [Venus] Verify the deployed revision in Partition acceptance tests ([#232](https://github.com/Azure/osdu-spi-partition/issues/232)) ([389d55a](https://github.com/Azure/osdu-spi-partition/commit/389d55a6ffaa4bd46981a10e0c0e6405dd44a07e))
+* **azure:** Decode istio x-payload header as base64url ([5c53ff0](https://github.com/Azure/osdu-spi-partition/commit/5c53ff0fc231d0cb7a01b9e0f6dde43f58affa65))
+* **azure:** Decode istio x-payload header as base64url ([d84caeb](https://github.com/Azure/osdu-spi-partition/commit/d84caeb43814124776994e24b529c9ae8120de16))
+* Sync upstream changes from f93508aa ([3fbf59e](https://github.com/Azure/osdu-spi-partition/commit/3fbf59ef245bd76597e16b44ae2accf8265766ce))
+
+
+### 🔧 Miscellaneous
+
+* Generate filtered upstream tree ([b331fa2](https://github.com/Azure/osdu-spi-partition/commit/b331fa27d2c317fc198f421c6707e37e4358e42d))
+
+
+### 🔨 Build System
+
+* **azure:** Remove spi-packages maven repository from pom ([e332112](https://github.com/Azure/osdu-spi-partition/commit/e3321122748e489d8afb19e6b62ac22d268c0814))
+* **azure:** Remove spi-packages maven repository from pom ([4522c9a](https://github.com/Azure/osdu-spi-partition/commit/4522c9a66db6056ec8f76e1db6e4c66f8f764196))
+
 ## [1.3.3](https://github.com/Azure/osdu-spi-partition/compare/v1.3.2...v1.3.3) (2026-10-20)
 
 
