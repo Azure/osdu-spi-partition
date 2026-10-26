@@ -39,7 +39,7 @@
     <log4j.version>2.25.5</log4j.version>
     <!-- jackson-core/databind 2.21.4/2.21.5 → HIGH CVEs fixed in 2.21.7.
          Import jackson-bom ahead of spring-boot-dependencies so the whole jackson.core line moves. -->
-    <jackson-bom.version>2.21.7</jackson-bom.version>
+    <jackson-bom.version>2.21.8</jackson-bom.version>
 
     <!-- Project Versions-->
     <lombok.version>1.18.42</lombok.version>

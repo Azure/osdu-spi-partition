@@ -34,7 +34,7 @@
     <core-lib-azure.version>4.0.0</core-lib-azure.version>
     <!-- Plugin Versions -->
     <surefire-plugin.version>3.5.4</surefire-plugin.version>
-    <jackson.version>2.21.7</jackson.version>
+    <jackson.version>2.21.8</jackson.version>
   </properties>
 
   <dependencyManagement>
