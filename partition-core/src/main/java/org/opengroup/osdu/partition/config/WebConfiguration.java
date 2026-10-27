@@ -19,21 +19,24 @@ package org.opengroup.osdu.partition.config;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
 import org.springframework.web.filter.UrlHandlerFilter;
 
 /**
  * Spring Framework 7 removed trailing slash path matching; this filter keeps "/path/" and "/path"
- * mapped to the same handler, ahead of security and request logging filters.
+ * mapped to the same handler. It runs right after the Spring Security filter chain so that the
+ * security firewall still sees, and rejects with 400, the original path (e.g. "partitions//").
  */
 @Configuration
 public class WebConfiguration {
+
+    // Spring Boot's default Spring Security filter order (SecurityFilterProperties.DEFAULT_FILTER_ORDER)
+    static final int SECURITY_FILTER_ORDER = -100;
 
     @Bean
     public FilterRegistrationBean<UrlHandlerFilter> trailingSlashFilter() {
         FilterRegistrationBean<UrlHandlerFilter> registration = new FilterRegistrationBean<>(
                 UrlHandlerFilter.trailingSlashHandler("/**").wrapRequest().build());
-        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 5);
+        registration.setOrder(SECURITY_FILTER_ORDER + 1);
         return registration;
     }
 }
