@@ -103,7 +103,7 @@ public class OsmPartitionPropertyRepository {
         try{
             tx = context.beginTransaction(destination);
             for (PartitionPropertyEntity entity : partitionProperties){
-                context.upsert(entity, destination);
+                context.upsert(destination, entity);
             }
             tx.commitIfActive();
         }

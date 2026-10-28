@@ -60,7 +60,7 @@ public class GlobalExceptionMapperTest {
         AppException exception = new AppException(409, "any reason", "any message");
 
         ResponseEntity<Object> response = sut.handleAppException(exception);
-        assertEquals(409, response.getStatusCodeValue());
+        assertEquals(409, response.getStatusCode().value());
         assertEquals("\"any message\"", response.getBody());
     }
 
@@ -69,7 +69,7 @@ public class GlobalExceptionMapperTest {
         AppException exception = new AppException(302, "any reason", "any message");
 
         ResponseEntity<Object> response = sut.handleAppException(exception);
-        assertEquals(302, response.getStatusCodeValue());
+        assertEquals(302, response.getStatusCode().value());
     }
 
     @Test
@@ -77,7 +77,7 @@ public class GlobalExceptionMapperTest {
         AppException exception = new AppException(302, "any reason", "any message");
 
         ResponseEntity<Object> response = sut.handleAppException(exception);
-        assertEquals(302, response.getStatusCodeValue());
+        assertEquals(302, response.getStatusCode().value());
         assertEquals(gson.toJson("any message"), response.getBody());
     }
 
@@ -86,7 +86,7 @@ public class GlobalExceptionMapperTest {
         NotFoundException exception = new NotFoundException("any message");
 
         ResponseEntity<Object> response = sut.handleNotFoundException(exception);
-        assertEquals(404, response.getStatusCodeValue());
+        assertEquals(404, response.getStatusCode().value());
         assertEquals(gson.toJson("any message"), response.getBody());
     }
 
@@ -95,7 +95,7 @@ public class GlobalExceptionMapperTest {
         JsonProcessingException exception = new JsonParseException(null, "any message");
 
         ResponseEntity<Object> response = sut.handleValidationException(exception);
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
 
     @Test
@@ -103,7 +103,7 @@ public class GlobalExceptionMapperTest {
         UnrecognizedPropertyException exception = mock(UnrecognizedPropertyException.class);
 
         ResponseEntity<Object> response = sut.handleValidationException(exception);
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
 
     @Test
@@ -111,7 +111,7 @@ public class GlobalExceptionMapperTest {
         AccessDeniedException exception = new AccessDeniedException("Access is denied.");
 
         ResponseEntity<Object> response = sut.handleAccessDeniedException(exception);
-        assertEquals(HttpStatus.FORBIDDEN.value(), response.getStatusCodeValue());
+        assertEquals(HttpStatus.FORBIDDEN.value(), response.getStatusCode().value());
     }
 
     @Test
@@ -119,7 +119,7 @@ public class GlobalExceptionMapperTest {
         ValidationException diException = new ValidationException("my bad");
 
         ResponseEntity<?> response = sut.handleValidationException(diException);
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
 
     @Test
@@ -127,7 +127,7 @@ public class GlobalExceptionMapperTest {
         ConstraintViolationException exception = new ConstraintViolationException("my bad", new HashSet<>());
 
         ResponseEntity<?> response = sut.handleConstraintValidationException(exception);
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
         assertEquals("\"{\\\"errors\\\":[\\\"Invalid payload\\\"]}\"", response.getBody());
 
         ConstraintViolation<?> violation = mock(ConstraintViolation.class);
@@ -135,7 +135,7 @@ public class GlobalExceptionMapperTest {
         exception.getConstraintViolations().add(violation);
 
         ResponseEntity<?> response2 = sut.handleConstraintValidationException(exception);
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response2.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response2.getStatusCode().value());
         assertEquals("\"{\\\"errors\\\":[\\\"violation\\\"]}\"", response2.getBody());
     }
 
@@ -144,7 +144,7 @@ public class GlobalExceptionMapperTest {
         Exception exception = new Exception("any message");
 
         ResponseEntity<?> response = sut.handleGeneralException(exception);
-        assertEquals(500, response.getStatusCodeValue());
+        assertEquals(500, response.getStatusCode().value());
         assertEquals(gson.toJson("An unknown error has occurred."), response.getBody());
     }
 
@@ -155,7 +155,7 @@ public class GlobalExceptionMapperTest {
         HttpRequestMethodNotSupportedException exception = new HttpRequestMethodNotSupportedException("any message");
 
         ResponseEntity<Object> response = sut.handleHttpRequestMethodNotSupported(exception, httpHeaders, HttpStatus.METHOD_NOT_ALLOWED, webRequest);
-        assertEquals(405, response.getStatusCodeValue());
+        assertEquals(405, response.getStatusCode().value());
     }
 
     @Test
