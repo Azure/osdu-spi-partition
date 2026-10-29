@@ -16,7 +16,3 @@ analyze:
       type: mvn
       target: partition-core/pom.xml
       path: .
-    - name: partition-ibm
-      type: mvn
-      target: provider/partition-ibm/pom.xml
-      path: .

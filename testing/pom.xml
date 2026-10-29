@@ -138,7 +138,6 @@
 
 	<modules>
 		<module>partition-test-core</module>
-		<module>partition-test-ibm</module>
 		<module>partition-test-baremetal</module>
 		<module>partition-test-core-plus</module>
   </modules>
