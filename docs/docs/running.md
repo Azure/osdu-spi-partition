@@ -11,8 +11,6 @@ One could either spin up a postgres docker container locally, and use along with
 
 The AWS provider has been removed from this repository.
 
-## Running Locally - IBM
-
 ## Running Locally - Partition Core Plus
 Instructions for running the Partion Core Plus can be found [here](https://community.opengroup.org/osdu/platform/system/partition/-/blob/master/partition-core-plus/README.md)
 
