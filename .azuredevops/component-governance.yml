@@ -10,6 +10,8 @@
 # branches, records a snapshot for its branch. Compliance is read from main.
 # The template publishes job outputs before its Component Governance step, so the scan evidence
 # (runtime inventory, provenance, image digests) is compared with the registration afterwards.
+# 1ES network isolation (required CFSClean policies) applies to the steps below and blocks public package
+# registries such as Maven Central; the template's Component Governance step runs after isolation stops.
 # Pilot note: once proven, this file moves to the Azure/osdu-spi template and is synced to every fork.
 
 name: $(Date:yyyyMMdd)$(Rev:.r)
@@ -19,6 +21,11 @@ parameters:
     displayName: Container images to scan (comma separated, empty to skip)
     type: string
     default: ghcr.io/azure/osdu-spi-partition:main-snapshot
+  # Network isolation (CFSClean) blocks Maven Central, so the build only works once Maven resolves through a CFS feed.
+  - name: buildInventory
+    displayName: Build the shipped module and record its runtime inventory (needs a CFS Maven feed)
+    type: boolean
+    default: false
 
 trigger:
   branches:
@@ -112,6 +119,30 @@ extends:
                 fetchDepth: 0
 
               - bash: |
+                  set -uo pipefail
+                  mkdir -p "$OUT"
+                  head -2 /etc/os-release
+                  for t in java mvn docker python3 jq git curl tar sha256sum sha512sum; do
+                    printf '%-10s %s\n' "$t" "$(command -v "$t" || echo MISSING)"
+                  done
+                  env | grep -E '^JAVA_HOME' | sort || echo "no JAVA_HOME_* variables"
+                  command -v docker >/dev/null && docker version --format 'docker server {{.Server.Version}}' 2>&1 | head -1
+                  probe() {
+                    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$2"); rc=$?
+                    if [ "$rc" -eq 0 ]; then r="HTTP $code"; else r="curl exit $rc (blocked or unreachable)"; fi
+                    printf '%-34s %s\n' "$1" "$r" | tee -a "$OUT/network-preflight.txt"
+                  }
+                  probe "maven central"         https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml
+                  probe "osdu gitlab maven"     https://community.opengroup.org/api/v4/groups/17/-/packages/maven/org/opengroup/osdu/os-core-common/maven-metadata.xml
+                  probe "apache archive"        https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz.sha512
+                  probe "apache dlcdn"          https://dlcdn.apache.org/maven/maven-3/
+                  probe "azure artifacts feed"  https://pkgs.dev.azure.com/OpenEnergyPlatform/dcd9d9fe-a1ca-4b31-bb47-0364ffe4fca7/_packaging/AdmeMavenFeed/maven/v1/org/apache/maven/apache-maven/maven-metadata.xml
+                  probe "ghcr registry"         https://ghcr.io/v2/
+                  probe "microsoft jdk"         https://aka.ms/download-jdk/microsoft-jdk-25-linux-x64.tar.gz.sha256sum.txt
+                  exit 0
+                displayName: Network and tooling preflight (diagnostic)
+
+              - bash: |
                   set -euo pipefail
                   for t in curl tar sha256sum sha512sum git; do
                     command -v "$t" >/dev/null || { echo "##[error]$t is required on the agent"; exit 1; }
@@ -136,8 +167,12 @@ extends:
                   mh="$AGENT_TOOLSDIRECTORY/apache-maven-$MAVEN_VERSION"
                   if [ ! -x "$mh/bin/mvn" ]; then
                     tgz="$AGENT_TEMPDIRECTORY/apache-maven-$MAVEN_VERSION-bin.tar.gz"
-                    curl -fsSL --retry 3 -o "$tgz" \
-                      "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/$MAVEN_VERSION/apache-maven-$MAVEN_VERSION-bin.tar.gz"
+                    rm -f "$tgz"
+                    for base in https://archive.apache.org/dist/maven/maven-3 https://dlcdn.apache.org/maven/maven-3; do
+                      curl -fsSL --retry 2 --max-time 300 -o "$tgz" "$base/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz" && break
+                      echo "Maven download from $base failed"; rm -f "$tgz"
+                    done
+                    [ -s "$tgz" ] || { echo "##[error]Maven $MAVEN_VERSION could not be downloaded"; exit 1; }
                     echo "$MAVEN_SHA512  $tgz" | sha512sum -c -
                     mkdir -p "$mh"
                     tar -xzf "$tgz" -C "$mh" --strip-components=1
@@ -162,6 +197,7 @@ extends:
                     | sed -E 's/^\s+//; s/ .*//' | awk -F: '{print $1":"$2":"$(NF-1)}' | sort -u > "$OUT/inventory.txt"
                   echo "runtime inventory of $SHIPPED_MODULES: $(wc -l < "$OUT/inventory.txt") components"
                 displayName: Build shipped module and runtime inventory
+                condition: and(succeeded(), eq('${{ parameters.buildInventory }}', 'true'))
 
               - bash: |
                   set -euo pipefail
@@ -205,7 +241,8 @@ extends:
                         echo "$i -> $d"
                         refs+=("$d")
                       else
-                        echo "##vso[task.logissue type=warning]Could not pull $i; it was not registered"
+                        echo "##vso[task.logissue type=warning]Could not pull $i under network isolation; Component Detection pulls it by tag after isolation stops"
+                        refs+=("$i")
                       fi
                     done
                   fi
