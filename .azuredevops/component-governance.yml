@@ -1,22 +1,20 @@
-# Component Governance scan for osdu-spi-partition (pilot, ADO Feature 84645).
+# Component Governance registration for osdu-spi-partition (pilot, ADO Feature 84645).
 #
 # Runs in the OpenEnergyPlatform/OSDU-SPI Azure DevOps project through the Azure Pipelines GitHub App
-# service connection. It registers the shipped Azure provider artifact with Component Governance:
-#   - the runtime Maven graph of the shipped module (MAVEN_ARGS limits detection to it),
-#   - the published container image,
-#   - the OSDU community upstream commit this fork is built from (cgmanifest.json).
-#
-# Registration happens for main and release tags (v*, not v*-upstream-*); other refs scan in LogOnly mode unless overridden.
+# service connection, on the 1ES Official pipeline template. The template's enforced Component
+# Governance step registers, after the steps below, what this fork ships:
+#   - the runtime Maven graph of the Azure provider (MAVEN_ARGS limits detection to that module),
+#   - the published container image (dockerImagesToScan, by digest),
+#   - the OSDU community upstream commit the fork is built from (cgmanifest.json).
+# The template always registers (scanType Register), so every run, including manual runs of other
+# branches, records a snapshot for its branch. Compliance is read from main.
+# The template publishes job outputs before its Component Governance step, so the scan evidence
+# (runtime inventory, provenance, image digests) is compared with the registration afterwards.
 # Pilot note: once proven, this file moves to the Azure/osdu-spi template and is synced to every fork.
 
 name: $(Date:yyyyMMdd)$(Rev:.r)
 
 parameters:
-  - name: scanType
-    displayName: CG scan type (Auto registers main and release tags only)
-    type: string
-    default: Auto
-    values: [Auto, LogOnly, Register]
   - name: images
     displayName: Container images to scan (comma separated, empty to skip)
     type: string
@@ -42,184 +40,188 @@ schedules:
         - main
     always: true
 
+resources:
+  repositories:
+    - repository: 1ESPipelineTemplates
+      type: git
+      name: 1ESPipelineTemplates/1ESPipelineTemplates
+      ref: refs/tags/release
+
 variables:
-  # Suppress the policy-injected detection; the explicit task below scans with the right Maven scope.
-  - name: skipComponentGovernanceDetection
-    value: true
+  - name: POOL_NAME
+    value: adme-custom-pool-eus2
   - name: SHIPPED_MODULES
     value: provider/partition-azure
   - name: MAVEN_PROFILES
     value: core,azure
+  - name: MAVEN_VERSION
+    value: 3.9.12
+  - name: MAVEN_SHA512
+    value: 0a1be79f02466533fc1a80abbef8796e4f737c46c6574ede5658b110899942a94db634477dfd3745501c80aef9aac0d4f841d38574373f7e2d24cce89d694f70
   - name: UPSTREAM_URL
     value: https://community.opengroup.org/osdu/platform/system/partition
   - name: SETTINGS_FILE
     value: $(Build.SourcesDirectory)/.mvn/community-maven.settings.xml
   - name: OUT
     value: $(Build.ArtifactStagingDirectory)/cg-scan
-  - name: CG_SCAN_TYPE
-    ${{ if ne(parameters.scanType, 'Auto') }}:
-      value: ${{ parameters.scanType }}
-    ${{ elseif or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), and(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'), not(contains(variables['Build.SourceBranch'], '-upstream-')))) }}:
-      value: Register
-    ${{ else }}:
-      value: LogOnly
 
-jobs:
-  - job: cg_scan
-    displayName: Component Governance scan
-    timeoutInMinutes: 90
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    serviceTreeId: 461b68e8-f849-47b4-8b85-3182a2def8a7
     pool:
-      vmImage: ubuntu-24.04
-    steps:
-      - checkout: self
-        fetchDepth: 0
-        persistCredentials: false
+      name: $(POOL_NAME)
+      os: linux
+    sdl:
+      sourceAnalysisPool:
+        name: $(POOL_NAME)
+        os: linux
+      credscan:
+        enabled: true
+      policheck:
+        enabled: false
+      antimalwareScan:
+        enabled: false
+        justificationForDisabling: 'Defender for Linux antimalware is unsupported on Azure Linux 3 (adme-custom-pool-eus2, the only 1ES pool available to this project) and network isolation precludes the ClamAV fallback. This pipeline only registers components with Component Governance; it publishes scan evidence, not binaries.'
+      psscriptanalyzer:
+        enabled: false
+        justificationForDisabling: 'PSScriptAnalyzer (Guardian) is unsupported on Azure Linux 3 (adme-custom-pool-eus2); the repository contains no PowerShell.'
+      binskim:
+        enabled: false
+      codeql:
+        compiled:
+          enabled: false
 
-      - bash: |
-          set -euo pipefail
-          v=$(sed -n 's:.*<java.version>\([0-9][0-9]*\)</java.version>.*:\1:p' pom.xml | head -1)
-          [ -n "$v" ] || { echo "##[error]java.version not found in pom.xml"; exit 1; }
-          var="JAVA_HOME_${v}_X64"
-          jh="${!var:-}"
-          if [ -z "$jh" ] || [ ! -x "$jh/bin/java" ]; then
-            jh="$AGENT_TOOLSDIRECTORY/temurin-$v"
-            JDK_FEATURE="$v" JDK_DIR="$jh" python3 - <<'PY'
-          import hashlib, json, os, subprocess, urllib.request
-          v, dest = os.environ["JDK_FEATURE"], os.environ["JDK_DIR"]
-          api = (f"https://api.adoptium.net/v3/assets/latest/{v}/hotspot"
-                 "?architecture=x64&image_type=jdk&os=linux&vendor=eclipse")
-          pkg = json.load(urllib.request.urlopen(api, timeout=120))[0]["binary"]["package"]
-          data = urllib.request.urlopen(pkg["link"], timeout=600).read()
-          digest = hashlib.sha256(data).hexdigest()
-          if digest != pkg["checksum"]:
-              raise SystemExit(f"##[error]JDK checksum mismatch: {digest} != {pkg['checksum']}")
-          path = os.path.join(os.environ["AGENT_TEMPDIRECTORY"], pkg["name"])
-          open(path, "wb").write(data)
-          os.makedirs(dest, exist_ok=True)
-          subprocess.run(["tar", "-xzf", path, "-C", dest, "--strip-components=1"], check=True)
-          print(f"installed {pkg['name']} (sha256 {digest})")
-          PY
-          fi
-          "$jh/bin/java" -version
-          echo "##vso[task.setvariable variable=JAVA_HOME]$jh"
-          echo "##vso[task.prependpath]$jh/bin"
-        displayName: Set up JDK from pom.xml java.version
+    stages:
+      - stage: component_governance
+        displayName: Component Governance
+        jobs:
+          - job: cg_scan
+            displayName: Build and register shipped components
+            timeoutInMinutes: 120
+            templateContext:
+              outputs:
+                - output: pipelineArtifact
+                  displayName: Publish scan evidence
+                  targetPath: $(OUT)
+                  artifactName: cg-scan
+                  sbomEnabled: false
+                  condition: succeededOrFailed()
+            steps:
+              - checkout: self
+                fetchDepth: 0
 
-      - bash: |
-          set -euo pipefail
-          echo "source:    $(Build.Repository.Name) $(Build.SourceBranch) $(Build.SourceVersion) ($(Build.Reason))"
-          echo "scan type: $(CG_SCAN_TYPE)"
-          echo "modules:   $(SHIPPED_MODULES) (profiles $(MAVEN_PROFILES))"
-          echo "images:    ${{ parameters.images }}"
-          mkdir -p "$OUT"
-          java -version 2>&1 | head -1
-          mvn -v | head -1
-          read -r major minor < <(mvn -v | head -1 | sed -E 's/.*Maven ([0-9]+)\.([0-9]+).*/\1 \2/')
-          if [ "$major" -lt 3 ] || { [ "$major" -eq 3 ] && [ "$minor" -lt 9 ]; }; then
-            echo "##[error]Maven 3.9 or later is required so MAVEN_ARGS reaches Component Detection"; exit 1
-          fi
-        displayName: Tooling
+              - bash: |
+                  set -euo pipefail
+                  for t in curl tar sha256sum sha512sum git; do
+                    command -v "$t" >/dev/null || { echo "##[error]$t is required on the agent"; exit 1; }
+                  done
+                  v=$(sed -n 's:.*<java.version>\([0-9][0-9]*\)</java.version>.*:\1:p' pom.xml | head -1)
+                  [ -n "$v" ] || { echo "##[error]java.version not found in pom.xml"; exit 1; }
+                  var="JAVA_HOME_${v}_X64"
+                  jh="${!var:-}"
+                  if [ -z "$jh" ] || [ ! -x "$jh/bin/java" ]; then
+                    jh="$AGENT_TOOLSDIRECTORY/microsoft-jdk-$v"
+                    if [ ! -x "$jh/bin/java" ]; then
+                      url="https://aka.ms/download-jdk/microsoft-jdk-$v-linux-x64.tar.gz"
+                      tgz="$AGENT_TEMPDIRECTORY/microsoft-jdk-$v.tar.gz"
+                      curl -fsSL --retry 3 -o "$tgz" "$url"
+                      want=$(curl -fsSL --retry 3 "$url.sha256sum.txt" | awk '{print $1}')
+                      got=$(sha256sum "$tgz" | awk '{print $1}')
+                      [ -n "$want" ] && [ "$want" = "$got" ] || { echo "##[error]JDK checksum mismatch: $got != $want"; exit 1; }
+                      mkdir -p "$jh"
+                      tar -xzf "$tgz" -C "$jh" --strip-components=1
+                    fi
+                  fi
+                  mh="$AGENT_TOOLSDIRECTORY/apache-maven-$MAVEN_VERSION"
+                  if [ ! -x "$mh/bin/mvn" ]; then
+                    tgz="$AGENT_TEMPDIRECTORY/apache-maven-$MAVEN_VERSION-bin.tar.gz"
+                    curl -fsSL --retry 3 -o "$tgz" \
+                      "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/$MAVEN_VERSION/apache-maven-$MAVEN_VERSION-bin.tar.gz"
+                    echo "$MAVEN_SHA512  $tgz" | sha512sum -c -
+                    mkdir -p "$mh"
+                    tar -xzf "$tgz" -C "$mh" --strip-components=1
+                  fi
+                  "$jh/bin/java" -version 2>&1 | head -1
+                  JAVA_HOME="$jh" "$mh/bin/mvn" -v | head -1
+                  echo "##vso[task.setvariable variable=JAVA_HOME]$jh"
+                  echo "##vso[task.prependpath]$jh/bin"
+                  echo "##vso[task.prependpath]$mh/bin"
+                displayName: Set up JDK (pom.xml java.version) and Maven
 
-      - bash: |
-          set -euo pipefail
-          mvn -B -ntp -q --settings="$SETTINGS_FILE" -P "$MAVEN_PROFILES" -pl "$SHIPPED_MODULES" -am install -DskipTests
-          mvn -B -ntp -q --settings="$SETTINGS_FILE" -P "$MAVEN_PROFILES" -pl "$SHIPPED_MODULES" dependency:list \
-            -DincludeScope=runtime -DexcludeTransitive=false -DoutputFile="$OUT/dependency-list.txt"
-          grep -E '^\s+[^ ]+:[^ ]+:[^ ]+:[^ ]+' "$OUT/dependency-list.txt" \
-            | sed -E 's/^\s+//; s/ .*//' | awk -F: '{print $1":"$2":"$(NF-1)}' | sort -u > "$OUT/inventory.txt"
-          echo "runtime inventory of $SHIPPED_MODULES: $(wc -l < "$OUT/inventory.txt") components"
-        displayName: Build shipped module and runtime inventory
+              - bash: |
+                  set -euo pipefail
+                  unset MAVEN_ARGS
+                  echo "source:  $(Build.Repository.Name) $(Build.SourceBranch) $(Build.SourceVersion) ($(Build.Reason))"
+                  echo "modules: $SHIPPED_MODULES (profiles $MAVEN_PROFILES)"
+                  mkdir -p "$OUT"
+                  mvn -B -ntp -q --settings="$SETTINGS_FILE" -P "$MAVEN_PROFILES" -pl "$SHIPPED_MODULES" -am install -DskipTests
+                  mvn -B -ntp -q --settings="$SETTINGS_FILE" -P "$MAVEN_PROFILES" -pl "$SHIPPED_MODULES" dependency:list \
+                    -DincludeScope=runtime -DexcludeTransitive=false -DoutputFile="$OUT/dependency-list.txt"
+                  grep -E '^\s+[^ ]+:[^ ]+:[^ ]+:[^ ]+' "$OUT/dependency-list.txt" \
+                    | sed -E 's/^\s+//; s/ .*//' | awk -F: '{print $1":"$2":"$(NF-1)}' | sort -u > "$OUT/inventory.txt"
+                  echo "runtime inventory of $SHIPPED_MODULES: $(wc -l < "$OUT/inventory.txt") components"
+                displayName: Build shipped module and runtime inventory
 
-      - bash: |
-          set -euo pipefail
-          is_generated() { case "$(git log -1 --format=%s "$1")" in "chore: generate filtered upstream tree"|"chore: mirror upstream tree") return 0;; esac; return 1; }
-          filt=(--grep='^Upstream-Sha: [0-9a-f]\{40\}$' --grep='^Filter-Rev: ' --all-match)
-          cands=(); while read -r c; do is_generated "$c" && cands+=("$c"); done < <(git rev-list --topo-order "${filt[@]}" HEAD)
-          [ "${#cands[@]}" -gt 0 ] || { echo "##[error]No generated upstream commit is reachable from HEAD"; exit 1; }
-          chosen=${cands[0]}
-          others=0; while read -r c; do is_generated "$c" && others=$((others+1)); done < <(git rev-list "${filt[@]}" HEAD "^$chosen")
-          [ "$others" -eq 0 ] || { echo "##[error]Ambiguous upstream provenance"; exit 1; }
-          up=$(git log -1 --format='%(trailers:key=Upstream-Sha,valueonly,separator=)' "$chosen" | tr -d '[:space:]')
-          [ "$up" = "$(git rev-parse "$chosen^2")" ] || { echo "##[error]Upstream-Sha is not the second parent of $chosen"; exit 1; }
-          seeds=$(git log HEAD --grep='^Seeded-From: ' --format='%(trailers:key=Seeded-From,valueonly)' | grep . || true)
-          echo "upstream: $UPSTREAM_URL @ $up (generated commit $chosen); seeds: ${seeds:-none}"
-          UP_SHA="$up" SEEDS="$seeds" python3 - <<'PY'
-          import json, os
-          shas = [os.environ["UP_SHA"]] + [l.split()[1] for l in os.environ["SEEDS"].splitlines() if l.strip()]
-          regs, seen = [], set()
-          for sha in shas:
-              if sha not in seen:
-                  seen.add(sha)
-                  regs.append({"component": {"type": "git", "git": {"repositoryUrl": os.environ["UPSTREAM_URL"], "commitHash": sha}}})
-          doc = {"$schema": "https://json.schemastore.org/component-detection-manifest.json", "version": 1, "registrations": regs}
-          for p in ("cgmanifest.json", os.path.join(os.environ["OUT"], "cgmanifest.json")):
-              with open(p, "w") as f:
-                  json.dump(doc, f, indent=2)
-          print(json.dumps(doc, indent=2))
-          PY
-        displayName: Record upstream provenance in cgmanifest.json
+              - bash: |
+                  set -euo pipefail
+                  is_generated() { case "$(git log -1 --format=%s "$1")" in "chore: generate filtered upstream tree"|"chore: mirror upstream tree") return 0;; esac; return 1; }
+                  filt=(--grep='^Upstream-Sha: [0-9a-f]\{40\}$' --grep='^Filter-Rev: ' --all-match)
+                  cands=(); while read -r c; do is_generated "$c" && cands+=("$c"); done < <(git rev-list --topo-order "${filt[@]}" HEAD)
+                  [ "${#cands[@]}" -gt 0 ] || { echo "##[error]No generated upstream commit is reachable from HEAD"; exit 1; }
+                  chosen=${cands[0]}
+                  others=0; while read -r c; do is_generated "$c" && others=$((others+1)); done < <(git rev-list "${filt[@]}" HEAD "^$chosen")
+                  [ "$others" -eq 0 ] || { echo "##[error]Ambiguous upstream provenance"; exit 1; }
+                  up=$(git log -1 --format='%(trailers:key=Upstream-Sha,valueonly,separator=)' "$chosen" | tr -d '[:space:]')
+                  [ "$up" = "$(git rev-parse "$chosen^2")" ] || { echo "##[error]Upstream-Sha is not the second parent of $chosen"; exit 1; }
+                  seeds=$(git log HEAD --grep='^Seeded-From: ' --format='%(trailers:key=Seeded-From,valueonly)' | awk 'NF >= 2 {print $2}')
+                  shas=$(printf '%s\n' "$up" $seeds | awk '!seen[$0]++')
+                  echo "upstream: $UPSTREAM_URL @ $up (generated commit $chosen); seeds: ${seeds:-none}"
+                  {
+                    printf '{\n  "$schema": "https://json.schemastore.org/component-detection-manifest.json",\n  "version": 1,\n  "registrations": [\n'
+                    sep=""
+                    for sha in $shas; do
+                      [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "##[error]Invalid commit hash: $sha" >&2; exit 1; }
+                      printf '%s    {"component": {"type": "git", "git": {"repositoryUrl": "%s", "commitHash": "%s"}}}' "$sep" "$UPSTREAM_URL" "$sha"
+                      sep=$',\n'
+                    done
+                    printf '\n  ]\n}\n'
+                  } > cgmanifest.json
+                  cp cgmanifest.json "$OUT/cgmanifest.json"
+                  cat cgmanifest.json
+                displayName: Record upstream provenance in cgmanifest.json
 
-      - bash: |
-          set -euo pipefail
-          IFS=',' read -ra imgs <<< '${{ parameters.images }}'
-          for i in "${imgs[@]}"; do [ -n "$i" ] && docker pull -q "$i"; done
-          docker images --digests --format '{{.Repository}}:{{.Tag}}@{{.Digest}} {{.Size}}' | grep -F ghcr.io || true
-        displayName: Pull published images
-        condition: and(succeeded(), ne('${{ parameters.images }}', ''))
+              - bash: |
+                  set -euo pipefail
+                  refs=()
+                  IFS=',' read -ra imgs <<< '${{ parameters.images }}'
+                  if ! command -v docker >/dev/null; then
+                    echo "##vso[task.logissue type=warning]docker is not available on the agent; images were not registered: ${{ parameters.images }}"
+                  else
+                    for i in "${imgs[@]}"; do
+                      [ -n "$i" ] || continue
+                      if docker pull -q "$i" >/dev/null; then
+                        d=$(docker inspect --format '{{index .RepoDigests 0}}' "$i")
+                        echo "$i -> $d"
+                        refs+=("$d")
+                      else
+                        echo "##vso[task.logissue type=warning]Could not pull $i; it was not registered"
+                      fi
+                    done
+                  fi
+                  list=$(IFS=','; echo "${refs[*]:-}")
+                  printf '%s\n' "${refs[@]:-}" > "$OUT/images.txt"
+                  echo "##vso[task.setvariable variable=dockerImagesToScan]$list"
+                  echo "dockerImagesToScan=$list"
+                displayName: Resolve published images by digest
+                condition: and(succeeded(), ne('${{ parameters.images }}', ''))
 
-      - task: ComponentGovernanceComponentDetection@0
-        displayName: Component Detection ($(CG_SCAN_TYPE))
-        inputs:
-          scanType: $(CG_SCAN_TYPE)
-          verbosity: Verbose
-          sourceScanPath: $(Build.SourcesDirectory)
-          dockerImagesToScan: ${{ parameters.images }}
-          alertWarningLevel: High
-        env:
-          MAVEN_ARGS: --settings=$(SETTINGS_FILE) -P $(MAVEN_PROFILES) -pl $(SHIPPED_MODULES) -am
+              - bash: |
+                  set -euo pipefail
+                  args="--settings=$SETTINGS_FILE -P $MAVEN_PROFILES -pl $SHIPPED_MODULES -am"
+                  echo "##vso[task.setvariable variable=MAVEN_ARGS]$args"
+                  echo "MAVEN_ARGS=$args"
+                  echo "dockerImagesToScan=${DOCKERIMAGESTOSCAN:-}"
+                  mvn -v | head -1
+                displayName: Scope the 1ES Component Governance scan
 
-      - bash: |
-          set -euo pipefail
-          cp "$BUILD_ARTIFACTSTAGINGDIRECTORY"/GovCompDisc_Manifest_*.json "$OUT"/ 2>/dev/null || true
-          python3 - <<'PY'
-          import glob, json, os
-          out = os.environ["OUT"]
-          def g(d, *keys):
-              for k in keys:
-                  if isinstance(d, dict) and k in d:
-                      return d[k]
-              return None
-          comps = []
-          for f in sorted(glob.glob(os.path.join(out, "GovCompDisc_Manifest_*.json"))):
-              doc = json.load(open(f))
-              comps += doc if isinstance(doc, list) else (g(doc, "componentsFound", "ComponentsFound", "components", "Components") or [])
-          by_type, maven, gits = {}, set(), set()
-          for c in comps:
-              comp = g(c, "component", "Component") or c
-              t = str(g(comp, "type", "Type") or "?")
-              by_type[t] = by_type.get(t, 0) + 1
-              if t.lower() == "maven":
-                  m = g(comp, "maven", "Maven") or comp
-                  maven.add(f'{g(m, "groupId", "GroupId")}:{g(m, "artifactId", "ArtifactId")}:{g(m, "version", "Version")}')
-              if t.lower() == "git":
-                  gi = g(comp, "git", "Git") or comp
-                  gits.add(f'{g(gi, "repositoryUrl", "RepositoryUrl")}@{g(gi, "commitHash", "CommitHash")}')
-          inv = {l.strip() for l in open(os.path.join(out, "inventory.txt")) if l.strip()}
-          missing = sorted(inv - maven)
-          print("components by type:", by_type)
-          print("git components:", sorted(gits))
-          print(f"runtime inventory {len(inv)}, detected maven {len(maven)}, inventory not detected {len(missing)}")
-          for m in missing:
-              print("  NOT DETECTED", m)
-          if missing:
-              print(f"##vso[task.logissue type=warning]{len(missing)} runtime components were not detected")
-          json.dump({"byType": by_type, "git": sorted(gits), "inventory": len(inv), "maven": len(maven), "missing": missing},
-                    open(os.path.join(out, "verify.json"), "w"), indent=2)
-          PY
-        displayName: Compare detection with runtime inventory
-        condition: succeededOrFailed()
-
-      - publish: $(OUT)
-        artifact: cg-scan-$(System.JobAttempt)
-        displayName: Publish scan evidence
-        condition: succeededOrFailed()
