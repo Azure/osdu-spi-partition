@@ -51,13 +51,18 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["upstream"],
-      "description": "Inputs of the Component Governance pipeline (.azuredevops/component-governance.yml, ADR-046), which registers what the fork ships and generates its NOTICE. Optional; the acceptance resolver validates it and does not read it.",
+      "description": "Inputs of the Component Governance pipeline (.azuredevops/component-governance.yml, ADR-047), which registers what the fork ships and generates its NOTICE. Optional; the acceptance resolver validates it and does not read it.",
       "properties": {
         "upstream": {
           "type": "string",
           "pattern": "^https://community\\.opengroup\\.org/osdu(/[A-Za-z0-9_-][A-Za-z0-9._-]*)+$",
           "not": {"pattern": "\\.git$"},
           "description": "The OSDU community project the fork is built from, without .git. Registered as the git component of the generated upstream commit."
+        },
+        "image": {
+          "type": "string",
+          "pattern": "^[a-z0-9]([a-z0-9._-]{0,98}[a-z0-9])?$",
+          "description": "GHCR package name of the service image, when the fork's SERVICE_NAME variable makes Validation publish it under a name other than the repository's. Default: the repository name. The loader image is <image>-load."
         },
         "module": {
           "type": "string",
