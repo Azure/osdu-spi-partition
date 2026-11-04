@@ -1,7 +1,7 @@
-# Component Governance registration and NOTICE for an OSDU SPI service fork (ADO Feature 84645).
+# Component Governance registration and NOTICE for an OSDU SPI service fork (ADR-046).
 #
-# One file for every java-maven-azure fork. Per-fork inputs come from the componentGovernance section of
-# .spi/service.yaml, read at run time:
+# Synced from the template (osdu-spi) into every fork; do not edit it in a fork. Per-fork inputs
+# come from the componentGovernance section of .spi/service.yaml, read at run time:
 #   upstream           OSDU community project URL (required)
 #   module             shipped Spring Boot module (default: the one under provider/*-azure)
 #   profiles           Maven profiles (default: core, azure)
@@ -13,21 +13,24 @@
 #   - the Maven graph of the shipped module (MAVEN_ARGS limits detection to it and its parents),
 #   - the published container images, ghcr.io/<owner>/<repo>[-load]:sha-<commit> (dockerImagesToScan),
 #   - the OSDU community upstream commits and the Application Insights agent (cgmanifest.json).
-# Nothing is registered until the fork's Validation workflow has published those images for the commit.
-# The template always registers (scanType Register), so every run, including manual runs of other
+# Nothing is registered until the fork's Validation workflow has published those images. The
+# template always registers (scanType Register), so every run, including manual runs of other
 # branches, records a snapshot for its branch. Compliance is read from main.
 #
-# 1ES network isolation applies to the job steps below and blocks public registries such as Maven Central
-# and ghcr.io. The steps therefore only prepare tools and inputs and do not build. The Component
-# Governance step runs after isolation stops: its Maven detector resolves the dependency tree from the
-# public repositories in pom.xml and it pulls the image itself.
+# 1ES network isolation applies to the job steps below and blocks public registries such as Maven
+# Central and ghcr.io. The steps therefore only prepare tools and inputs and do not build. The
+# Component Governance step runs after isolation stops: its Maven detector resolves the dependency
+# tree from the public repositories in pom.xml and it pulls the images itself.
+#
+# The steps are in .github/actions/component-governance (README there); setup is in the
+# Component Governance runbook.
 
 name: $(Date:yyyyMMdd)$(Rev:.r)
 
 parameters:
-  # auto scans the image the fork's Validation workflow published for the built commit.
+  # auto scans the images Validation published for the built commit.
   - name: images
-    displayName: Container images to scan (comma separated, or auto for the built commit's image)
+    displayName: Container images to scan (comma separated, or auto for the built commit's images)
     type: string
     default: auto
   # Opens or updates a draft pull request that replaces NOTICE, targeting the branch this run built.
@@ -70,6 +73,8 @@ variables:
     value: 3.9.12
   - name: MAVEN_SHA512
     value: 0a1be79f02466533fc1a80abbef8796e4f737c46c6574ede5658b110899942a94db634477dfd3745501c80aef9aac0d4f841d38574373f7e2d24cce89d694f70
+  - name: CG_SCRIPTS
+    value: .github/actions/component-governance
   - name: OUT
     value: $(Build.ArtifactStagingDirectory)/cg-scan
   - name: NOTICE_OUT
@@ -126,318 +131,20 @@ extends:
                 fetchDepth: 0
                 persistCredentials: true
 
-              # Reads componentGovernance from .spi/service.yaml with the template's descriptor parser and sets the
-              # inputs the Component Governance step reads: MAVEN_ARGS (Maven 3.9+ reads it when the Maven detector
-              # runs dependency:tree), dockerImagesToScan and ComponentDetection.IgnoreDirectories. Writes
-              # cgmanifest.json with the upstream commits and the Application Insights agent.
+              # Sets MAVEN_ARGS (Maven 3.9+ reads it when the Maven detector runs dependency:tree),
+              # dockerImagesToScan and ComponentDetection.IgnoreDirectories, and writes cgmanifest.json.
               - bash: |
                   set -euo pipefail
                   command -v python3 >/dev/null || { echo "##[error]python3 is required on the agent"; exit 1; }
-                  python3 - <<'PY'
-                  import json, os, re, subprocess, sys
-
-                  env = os.environ
-                  src = env.get("BUILD_SOURCESDIRECTORY") or os.getcwd()
-                  os.chdir(src)
-                  out = env["OUT"]
-                  os.makedirs(out, exist_ok=True)
-
-
-                  def fail(msg):
-                      print(f"##[error]{msg}")
-                      sys.exit(1)
-
-
-                  def git(*args):
-                      return subprocess.run(["git", *args], check=True, capture_output=True, text=True).stdout.strip()
-
-
-                  sys.dont_write_bytecode = True
-                  sys.path.insert(0, os.path.join(src, ".github", "actions", "acceptance-resolver"))
-                  try:
-                      from resolve import Halt, parse_descriptor_yaml, validate_descriptor
-                  except ImportError as e:
-                      fail(f"The template's descriptor parser (.github/actions/acceptance-resolver/resolve.py) is not available: {e}")
-
-                  descriptor_path = env.get("CG_DESCRIPTOR") or ".spi/service.yaml"
-                  try:
-                      with open(descriptor_path, encoding="utf-8") as f:
-                          desc = parse_descriptor_yaml(f.read())
-                      # The shared schema does not know componentGovernance yet; validate everything else with it.
-                      validate_descriptor({k: v for k, v in desc.items() if k != "componentGovernance"})
-                  except FileNotFoundError:
-                      fail(f"{descriptor_path} is missing")
-                  except Halt as e:
-                      fail(f"{descriptor_path}: {e}")
-
-                  service = desc.get("service") or {}
-                  name = service.get("name")
-                  if service.get("archetype") != "java-maven-azure":
-                      fail(f"Unsupported archetype {service.get('archetype')!r}; this pipeline handles java-maven-azure")
-                  cg = desc.get("componentGovernance")
-                  if not isinstance(cg, dict):
-                      fail(f"{descriptor_path} has no componentGovernance section")
-                  unknown = sorted(set(cg) - {"upstream", "module", "profiles", "ignoreDirectories"})
-                  if unknown:
-                      fail(f"Unknown componentGovernance keys: {', '.join(unknown)}")
-
-
-                  root = os.path.realpath(src)
-
-
-                  def rel_dir(value, key):
-                      if (not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*", value)
-                              or any(part in (".", "..") for part in value.split("/"))):
-                          fail(f"componentGovernance.{key}: {value!r} is not a relative directory path")
-                      real = os.path.realpath(value)
-                      if real != os.path.join(root, *value.split("/")):
-                          fail(f"componentGovernance.{key}: {value} resolves through a symbolic link")
-                      if not os.path.isdir(value):
-                          fail(f"componentGovernance.{key}: {value} does not exist")
-                      return value
-
-
-                  upstream = cg.get("upstream")
-                  if not isinstance(upstream, str) or not re.fullmatch(r"https://community\.opengroup\.org/osdu(/[A-Za-z0-9._-]+)+", upstream):
-                      fail(f"componentGovernance.upstream: {upstream!r} is not an OSDU community project URL")
-                  upstream = upstream.removesuffix(".git")
-
-                  profiles = cg.get("profiles", ["core", "azure"])
-                  if not isinstance(profiles, list) or not profiles or not all(isinstance(p, str) and re.fullmatch(r"[A-Za-z0-9._-]+", p) for p in profiles):
-                      fail(f"componentGovernance.profiles: {profiles!r} is not a list of Maven profile ids")
-
-                  if "module" in cg:
-                      module = rel_dir(cg["module"], "module")
-                  else:
-                      # Same convention as the docker-build action's JAR resolution: the Spring Boot module under provider/*-azure.
-                      candidates = []
-                      for top in sorted(os.listdir("provider")) if os.path.isdir("provider") else []:
-                          if not top.endswith("-azure") or not os.path.isdir(f"provider/{top}"):
-                              continue
-                          subs = sorted(f"provider/{top}/{s}" for s in os.listdir(f"provider/{top}") if os.path.isdir(f"provider/{top}/{s}"))
-                          for d in [f"provider/{top}"] + subs:
-                              pom = os.path.join(d, "pom.xml")
-                              if os.path.isfile(pom) and "spring-boot-maven-plugin" in open(pom, encoding="utf-8").read():
-                                  candidates.append(d)
-                      preferred = [d for d in candidates if d.startswith(f"provider/{name}-azure")]
-                      picks = preferred if len(preferred) == 1 else candidates
-                      if len(picks) != 1:
-                          fail(f"Cannot infer the shipped module (Spring Boot modules under provider/*-azure: {candidates or 'none'}); set componentGovernance.module")
-                      module = picks[0]
-                  if not os.path.isfile(os.path.join(module, "pom.xml")):
-                      fail(f"Shipped module {module} has no pom.xml")
-
-                  ignore = cg.get("ignoreDirectories", [])
-                  if not isinstance(ignore, list):
-                      fail("componentGovernance.ignoreDirectories must be a list")
-                  ignore = [rel_dir(d, "ignoreDirectories") for d in ignore]
-                  if any(module == d or module.startswith(d + "/") for d in ignore):
-                      fail(f"componentGovernance.ignoreDirectories must not contain the shipped module {module}")
-
-                  settings = os.path.join(src, ".mvn", "community-maven.settings.xml")
-                  if not os.path.isfile(settings):
-                      fail(".mvn/community-maven.settings.xml is missing")
-                  maven_args = f"--settings={settings} -P {','.join(profiles)} -pl {module} -am"
-
-                  owner, repo = env["BUILD_REPOSITORY_NAME"].lower().split("/", 1)
-                  sha = env["BUILD_SOURCEVERSION"]
-                  images = env.get("CG_IMAGES", "").strip()
-                  images_auto = images in ("", "auto")
-                  if images_auto:
-                      # Validation publishes these from the same commit: the service image, and the loader image when the
-                      # fork carries shared schemas (load-image action). The acceptance image is test tooling and not scanned.
-                      refs = [f"ghcr.io/{owner}/{repo}:sha-{sha[:12]}"]
-                      if os.path.isdir("deployments/shared-schemas") and os.listdir("deployments/shared-schemas"):
-                          refs.append(f"ghcr.io/{owner}/{repo}-load:sha-{sha[:12]}")
-                      images = ",".join(refs)
-                  if not re.fullmatch(r"[A-Za-z0-9._/:@-]+(,[A-Za-z0-9._/:@-]+)*", images):
-                      fail(f"images: {images!r} is not a comma separated list of image references")
-
-                  # Upstream provenance: the newest generated upstream tree reachable from HEAD, plus seed snapshots.
-                  generated = ("chore: generate filtered upstream tree", "chore: mirror upstream tree")
-                  grep = ["--grep=^Upstream-Sha: [0-9a-f]\\{40\\}$", "--grep=^Filter-Rev: ", "--all-match"]
-                  cands = [c for c in git("rev-list", "--topo-order", *grep, "HEAD").split() if git("log", "-1", "--format=%s", c) in generated]
-                  if not cands:
-                      fail("No generated upstream commit is reachable from HEAD")
-                  chosen = cands[0]
-                  others = [c for c in git("rev-list", *grep, "HEAD", f"^{chosen}").split() if git("log", "-1", "--format=%s", c) in generated]
-                  if others:
-                      fail(f"Ambiguous upstream provenance: generated commits {others} are not ancestors of {chosen}")
-                  up = "".join(git("log", "-1", "--format=%(trailers:key=Upstream-Sha,valueonly,separator=)", chosen).split())
-                  # generate-branch.sh makes upstream the last parent: second after a base, sole parent on the first generation.
-                  parents = git("log", "-1", "--format=%P", chosen).split()
-                  if len(parents) not in (1, 2) or up != parents[-1]:
-                      fail(f"Upstream-Sha of {chosen} is not its upstream parent (parents: {parents})")
-                  seeds = []
-                  for line in git("log", "HEAD", "--grep=^Seeded-From: ", "--format=%(trailers:key=Seeded-From,valueonly)").splitlines():
-                      if not line.strip():
-                          continue
-                      m = re.fullmatch(r"[A-Za-z0-9._/-]+ ([0-9a-f]{40})", line.strip())
-                      if not m:
-                          fail(f"Malformed Seeded-From trailer {line.strip()!r}; expected '<path> <40-hex commit>'")
-                      if subprocess.run(["git", "merge-base", "--is-ancestor", m.group(1), "HEAD"], capture_output=True).returncode != 0:
-                          fail(f"Seeded-From commit {m.group(1)} is not an ancestor of HEAD")
-                      seeds.append(m.group(1))
-                  shas = list(dict.fromkeys([up] + seeds))
-                  if not all(re.fullmatch(r"[0-9a-f]{40}", s) for s in shas):
-                      fail(f"Invalid upstream commit hashes: {shas}")
-                  registrations = [{"component": {"type": "git", "git": {"repositoryUrl": upstream, "commitHash": s}}} for s in shas]
-
-                  # The canonical image adds the Application Insights agent outside Maven (build/Dockerfile).
-                  agent = None
-                  if os.path.isfile("build/Dockerfile"):
-                      m = re.search(r'^ARG APPLICATIONINSIGHTS_AGENT_VERSION="?([0-9][0-9A-Za-z.\-]*)"?\s*$', open("build/Dockerfile", encoding="utf-8").read(), re.M)
-                      if m:
-                          agent = m.group(1)
-                          registrations.append({"component": {"type": "maven", "maven": {
-                              "groupId": "com.microsoft.azure", "artifactId": "applicationinsights-agent", "version": agent}}})
-                  if not agent:
-                      print("##vso[task.logissue type=warning]build/Dockerfile declares no APPLICATIONINSIGHTS_AGENT_VERSION; the agent was not registered")
-
-                  manifest = {"$schema": "https://json.schemastore.org/component-detection-manifest.json", "version": 1, "registrations": registrations}
-                  for p in ("cgmanifest.json", os.path.join(out, "cgmanifest.json")):
-                      with open(p, "w", encoding="utf-8", newline="\n") as f:
-                          json.dump(manifest, f, indent=2)
-                          f.write("\n")
-
-                  resolved = {"service": name, "commit": sha, "upstream": upstream, "upstreamCommit": up, "generatedCommit": chosen,
-                              "seeds": sorted(set(seeds)), "module": module, "profiles": profiles, "mavenArgs": maven_args, "images": images,
-                              "imagesAuto": images_auto, "ignoreDirectories": ignore, "applicationInsightsAgent": agent}
-                  with open(os.path.join(out, "cg-inputs.json"), "w", encoding="utf-8", newline="\n") as f:
-                      json.dump(resolved, f, indent=2)
-                      f.write("\n")
-                  for k, v in resolved.items():
-                      print(f"{k}: {v}")
-                  print(f"##vso[task.setvariable variable=MAVEN_ARGS]{maven_args}")
-                  print(f"##vso[task.setvariable variable=dockerImagesToScan]{images}")
-                  if ignore:
-                      print(f"##vso[task.setvariable variable=ComponentDetection.IgnoreDirectories]{','.join(ignore)}")
-                  PY
+                  python3 "$CG_SCRIPTS/resolve_inputs.py"
                 displayName: Resolve component governance inputs from .spi/service.yaml
                 env:
                   CG_IMAGES: ${{ parameters.images }}
 
               # Registers nothing unless the images are published: the Component Governance step only warns when an
-              # image cannot be pulled and would register a snapshot without it. Waits like release.yml does for the
-              # commit's Docker Push job, through api.github.com with the checkout's GitHub App token, then removes the
-              # credential before the scan.
-              - bash: |
-                  set -euo pipefail
-                  python3 - <<'PY'
-                  import base64, json, os, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
-
-                  env = os.environ
-                  os.chdir(env.get("BUILD_SOURCESDIRECTORY") or os.getcwd())
-                  with open(os.path.join(env["OUT"], "cg-inputs.json"), encoding="utf-8") as f:
-                      inputs = json.load(f)
-                  WAIT_SECONDS = int(env.get("CG_IMAGE_WAIT_SECONDS", "1800"))
-                  GRACE_SECONDS = int(env.get("CG_IMAGE_GRACE_SECONDS", "600"))
-                  CHECK = "Docker Push"  # job name in the template's validate.yml; that job pushes every :sha-<commit> image
-
-
-                  def fail(msg):
-                      print(f"##[error]{msg}")
-                      sys.exit(1)
-
-
-                  def git(*args):
-                      return subprocess.run(["git", *args], check=True, capture_output=True, text=True).stdout.strip()
-
-
-                  def extraheaders():
-                      out = subprocess.run(["git", "config", "--local", "--get-regexp", r"^http\..*\.extraheader$"], capture_output=True, text=True).stdout
-                      return [line.split(" ", 1) for line in out.splitlines() if " " in line]
-
-
-                  def checkout_token():
-                      for _, value in extraheaders():
-                          if value.lower().startswith("authorization: basic "):
-                              return base64.b64decode(value.split()[-1]).decode().split(":", 1)[1]
-                      fail("The checkout did not persist a GitHub credential")
-
-
-                  def drop_credentials():
-                      for key, _ in extraheaders():
-                          subprocess.run(["git", "config", "--local", "--unset-all", key], check=True)
-
-
-                  def api_get(token, path, **query):
-                      url = f"https://api.github.com/repos/{urllib.parse.quote(env['BUILD_REPOSITORY_NAME'])}/{path}"
-                      if query:
-                          url += "?" + urllib.parse.urlencode(query)
-                      req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
-                                                                 "X-GitHub-Api-Version": "2022-11-28"})
-                      with urllib.request.urlopen(req, timeout=60) as r:
-                          return json.loads(r.read())
-
-
-                  def publishing_runs(token):
-                      """Docker Push check runs that published :sha-<commit>.
-
-                      A pull_request run attaches its checks to the PR head but checks out and publishes the merge commit, so only
-                      runs of the push event count: they check out exactly the commit. The Actions API names the event. Without
-                      access to it (the Azure Pipelines GitHub App has no Actions permission), count check suites of main: only a
-                      push to main, a dispatch on main, or a pull request whose head is this repository's main produce them, and
-                      the last is refused below because it would publish a merge commit.
-                      """
-                      sha = inputs["commit"]
-                      runs = [c for c in api_get(token, f"commits/{sha}/check-runs", check_name=CHECK, filter="all", per_page=100)["check_runs"]
-                              if (c.get("app") or {}).get("slug") == "github-actions"]
-                      try:
-                          push_suites = {r["check_suite_id"] for r in api_get(token, "actions/runs", head_sha=sha, event="push", per_page=100)["workflow_runs"]}
-                          return [c for c in runs if c["check_suite"]["id"] in push_suites], "push-event workflow runs"
-                      except urllib.error.HTTPError as e:
-                          if e.code not in (403, 404):
-                              raise
-                      owner = env["BUILD_REPOSITORY_NAME"].split("/")[0]
-                      if api_get(token, "pulls", head=f"{owner}:main", state="all", per_page=1):
-                          fail("This repository has pull requests from main, so a Docker Push check of main can come from a pull request "
-                               "run that published a merge commit; without Actions read access the event cannot be told apart. Queue "
-                               "the run with explicit images.")
-                      suites = {c["check_suite"]["id"]: api_get(token, f"check-suites/{c['check_suite']['id']}")["head_branch"] for c in runs}
-                      return [c for c in runs if suites[c["check_suite"]["id"]] == "main"], "check suites of main"
-
-
-                  try:
-                      if not inputs["imagesAuto"]:
-                          print(f"##vso[task.logissue type=warning]Scanning explicitly requested images, not verified before registration: {inputs['images']}")
-                          sys.exit(0)
-                      token = env.get("CG_GITHUB_TOKEN") or checkout_token()
-                      if env.get("TF_BUILD"):
-                          print(f"##vso[task.setsecret]{token}")
-                      start = time.time()
-                      while True:
-                          try:
-                              runs, method = publishing_runs(token)
-                          except urllib.error.HTTPError as e:
-                              if e.code < 500 and e.code != 429:
-                                  fail(f"GitHub API returned HTTP {e.code} for {e.url}")
-                              print(f"GitHub query failed (HTTP {e.code}); retrying")
-                              runs = None
-                          except (urllib.error.URLError, TimeoutError) as e:
-                              print(f"GitHub query failed ({e}); retrying")
-                              runs = None
-                          if runs:
-                              done = [c for c in runs if c["status"] == "completed"]
-                              if any(c["conclusion"] == "success" for c in done):
-                                  print(f"{CHECK} succeeded for {inputs['commit']} (matched by {method}): {inputs['images']} are published")
-                                  break
-                              if len(done) == len(runs):
-                                  fail(f"{CHECK} for {inputs['commit']} ended without success ({', '.join(sorted({str(c['conclusion']) for c in done}))}); "
-                                       "its images were not published, so nothing is registered")
-                          elif runs is not None and time.time() - start > GRACE_SECONDS:
-                              fail(f"No push-triggered {CHECK} run exists for {inputs['commit']}: Validation published no image for this commit, "
-                                   "for example a push that only touched paths Validation ignores, or a commit that never reached main. Queue the "
-                                   "run with explicit images, or scan a commit that has a published image.")
-                          if time.time() - start > WAIT_SECONDS:
-                              fail(f"{CHECK} for {inputs['commit']} did not finish within {WAIT_SECONDS // 60} minutes")
-                          print(f"Waiting for {CHECK} of {inputs['commit']} ({int(time.time() - start)} s)")
-                          time.sleep(30)
-                  finally:
-                      # The scan that follows must not see the GitHub credential.
-                      drop_credentials()
-                  PY
-                displayName: Wait for the commit's published images
+              # image cannot be pulled and would register a snapshot without it.
+              - bash: python3 "$CG_SCRIPTS/wait_images.py"
+                displayName: Wait for the published images
                 timeoutInMinutes: 35
 
               # Also runs when an earlier step failed, so no later step ever sees the GitHub credential.
@@ -488,10 +195,9 @@ extends:
                   echo "##vso[task.prependpath]$mh/bin"
                 displayName: Set up JDK (pom.xml Java release) and Maven for detection
 
-
           # Runs after cg_scan because the template adds its Component Governance step after all steps of a job,
           # so a NOTICE step inside cg_scan would read the previous snapshot. Component Governance is disabled
-          # for this job: it checks out at most NOTICE, and an empty snapshot would become the branch's most
+          # for this job: it checks out a few files, and an empty snapshot would become the branch's most
           # recent scan, which Component Governance then keeps as the production snapshot.
           - job: cg_notice
             displayName: Generate NOTICE from Component Governance
@@ -502,7 +208,7 @@ extends:
               sdl:
                 componentgovernance:
                   enabled: false
-                  justificationForDisabling: 'This job only downloads the NOTICE that Component Governance generates from the cg_scan job of the same run, which registers the components. It checks out at most the NOTICE file, so a scan here would record an empty snapshot that replaces the real one as the production snapshot of the branch.'
+                  justificationForDisabling: 'This job only downloads the NOTICE that Component Governance generates from the cg_scan job of the same run, which registers the components. It checks out only its scripts and the files it may change, so a scan here would record an empty snapshot that replaces the real one as the production snapshot of the branch.'
               outputs:
                 - output: pipelineArtifact
                   displayName: Publish Component Governance NOTICE
@@ -511,246 +217,27 @@ extends:
                   sbomEnabled: false
                   condition: succeededOrFailed()
             steps:
-              - ${{ if eq(parameters.openNoticePr, true) }}:
-                # The pull request step pushes with the Azure Pipelines GitHub App token the checkout persists.
-                - checkout: self
-                  persistCredentials: true
-                  fetchDepth: 1
-                  sparseCheckoutPatterns: /NOTICE
-              - ${{ else }}:
-                - checkout: none
+              # The pull request step pushes with the Azure Pipelines GitHub App token the checkout persists.
+              - checkout: self
+                fetchDepth: 1
+                persistCredentials: ${{ parameters.openNoticePr }}
+                sparseCheckoutPatterns: /NOTICE /.github/upstream-filter.yml /.github/actions/component-governance/
 
               - bash: |
                   set -euo pipefail
                   command -v python3 >/dev/null || { echo "##[error]python3 is required on the agent"; exit 1; }
-                  mkdir -p "$NOTICE_OUT"
-                  python3 - <<'PY'
-                  import base64, json, os, re, time, urllib.error, urllib.request
-
-                  env = os.environ
-                  auth = "Basic " + base64.b64encode((":" + env["SYSTEM_ACCESSTOKEN"]).encode()).decode()
-                  out = env["NOTICE_OUT"]
-                  ver = "api-version=7.1-preview.1"
-
-                  def call(url, tries=3):
-                      for attempt in range(1, tries + 1):
-                          req = urllib.request.Request(url, headers={"Authorization": auth, "Accept": "application/json"})
-                          try:
-                              with urllib.request.urlopen(req, timeout=300) as r:
-                                  return json.loads(r.read())
-                          except urllib.error.HTTPError as e:
-                              msg = f"GET {url.split('?')[0]} -> HTTP {e.code}: {e.read()[:300]!r}"
-                              if (e.code < 500 and e.code != 429) or attempt == tries:
-                                  raise SystemExit(f"##[error]{msg}")
-                          except (urllib.error.URLError, TimeoutError) as e:
-                              msg = f"GET {url.split('?')[0]} -> {e}"
-                              if attempt == tries:
-                                  raise SystemExit(f"##[error]{msg}")
-                          print(f"{msg}; retrying in 30 s")
-                          time.sleep(30)
-
-                  proj, repo, build = env["SYSTEM_TEAMPROJECTID"], env["BUILD_REPOSITORY_NAME"], env["BUILD_BUILDID"]
-                  gov = call(f'{env["SYSTEM_COLLECTIONURI"]}_apis/resourceareas/7136235f-d277-4c27-9194-e3ada05fea2c?{ver}')["locationUrl"]
-                  api = f"{gov.rstrip('/')}/{proj}/_apis/componentgovernance/governedrepositories"
-                  repos = [r for r in call(f"{api}?{ver}")["value"] if (r.get("name") or "").lower() == repo.lower()]
-                  if len(repos) != 1:
-                      raise SystemExit(f"##[error]Expected one governed repository named {repo}, found {len(repos)}")
-                  gid = repos[0]["id"]
-
-                  # Registration is processed asynchronously; wait until the snapshot of this run's scan job is visible.
-                  prefix = f'vsts://{env["SYSTEM_COLLECTIONID"]}/{proj}/{env["SYSTEM_DEFINITIONID"]}/'.lower()
-                  phase = env["CG_SCAN_PHASE"]
-                  for attempt in range(1, 21):
-                      found = [(b, t) for b in call(f"{api}/{gid}/branches?{ver}")["value"] for t in b.get("snapshotTypes", [])
-                               if t["buildType"].lower().startswith(prefix) and t.get("phaseDisplayName") == phase
-                               and str(t.get("latestScanBuildIdentifier")) == build]
-                      if found:
-                          break
-                      print(f"Snapshot of build {build} is not visible yet (attempt {attempt}); waiting 30 s")
-                      time.sleep(30)
-                  if len(found) != 1:
-                      raise SystemExit(f"##[error]Expected one snapshot for build {build} job '{phase}', found {len(found)}")
-                  branch, stype = found[0]
-                  tid = stype["typeId"]
-                  print(f"governed repository {gid}, branch {branch['moniker']}, snapshot type {tid}, build {build}")
-
-                  res = call(f"{api}/{gid}/Notice?snapshotTypeId={tid}&format=text&{ver}")
-                  # The Notice API takes a snapshot type, not a snapshot: make sure no later run replaced this run's scan.
-                  latest = [str(t.get("latestScanBuildIdentifier")) for b in call(f"{api}/{gid}/branches?{ver}")["value"]
-                            for t in b.get("snapshotTypes", []) if t["typeId"] == tid]
-                  if latest != [build]:
-                      raise SystemExit(f"##[error]Snapshot type {tid} now belongs to build {latest}, not {build}: a concurrent run "
-                                       "of this pipeline superseded it. Rerun when no other run of this branch is in progress.")
-                  content = res["content"].replace("\r\n", "\n")
-                  excluded = res.get("excludedComponents") or {}
-                  with open(os.path.join(out, "NOTICE"), "w", newline="\n") as f:
-                      f.write(content)
-                  with open(os.path.join(out, "notice-excluded.json"), "w") as f:
-                      json.dump(excluded, f, indent=2)
-
-                  entries = {}
-                  for block in content.split("\n---------------------------------------------------------\n")[1:]:
-                      m = re.match(r"(\S+) (\S+) - (.+)$", block.strip().splitlines()[0].strip()) if block.strip() else None
-                      if m:
-                          entries[(m.group(1).lower(), m.group(2).lower())] = m.group(3)
-
-                  # excludedComponents accounts for every registered component of the snapshot that has no NOTICE entry.
-                  # noDefinition/noCopyright items are ClearlyDefined coordinates; the others are component objects.
-                  def label(it):
-                      if isinstance(it, str):
-                          p = it.split("/")
-                          if len(p) < 5:
-                              return it
-                          return f"{p[3]}:{p[4]}" if p[2] == "-" else f"{p[2]}:{p[3]}:{p[4]}"
-                      kind = it.get("type") or "os"
-                      return f"{it.get('displayName')}:{it.get('displayVersion')}" + ("" if kind == "maven" else f" ({kind})")
-
-                  gaps = {k: sorted({label(i) for i in v}) for k, v in sorted(excluded.items()) if v and k not in ("noCopyright", "notSupported")}
-                  os_packages = len(excluded.get("notSupported") or [])
-                  no_copyright = len(excluded.get("noCopyright") or [])
-                  report = {"governedRepository": gid, "snapshotType": tid, "build": build, "noticeEntries": len(entries),
-                            "noticeEntriesWithoutCopyright": no_copyright, "imagePackagesNotSupported": os_packages,
-                            "notInNotice": gaps, "excludedCounts": {k: len(v) for k, v in excluded.items()}}
-                  with open(os.path.join(out, "notice-report.json"), "w") as f:
-                      json.dump(report, f, indent=2)
-
-                  print(f"NOTICE: {len(content)} characters, {len(entries)} entries ({no_copyright} without a copyright line)")
-                  print("excluded by reason:", report["excludedCounts"])
-                  md = ["## Component Governance NOTICE", "",
-                        f"Snapshot type {tid} of build {build}: {len(entries)} entries, {no_copyright} without a copyright line.", "",
-                        "Registered components that Component Governance leaves out of the NOTICE. Registrations include test",
-                        "scope, so `excluded` is mostly test dependencies; the completeness check against the shipped jar runs",
-                        f"where the jar is built. The {os_packages} operating system packages of the container image are not",
-                        "supported by the Component Governance NOTICE.", "",
-                        "| Reason | Count |", "| --- | --- |"]
-                  md += [f"| {k} | {len(v)} |" for k, v in gaps.items()]
-                  for k, v in gaps.items():
-                      print(f"  {k} ({len(v)}): " + ", ".join(v))
-                      md += ["", f"**{k}**: " + ", ".join(f"`{x}`" for x in v)]
-                  with open(os.path.join(out, "notice-report.md"), "w") as f:
-                      f.write("\n".join(md) + "\n")
-                  print(f"##vso[task.uploadsummary]{os.path.join(out, 'notice-report.md')}")
-                  # The Component Governance step only warns when it cannot scan an image, and the snapshot is registered
-                  # without it; its alerts can then show as fixed until a complete scan replaces it. Fail loudly instead.
-                  timeline = call(f'{env["SYSTEM_COLLECTIONURI"]}{proj}/_apis/build/builds/{build}/timeline?api-version=7.1')["records"]
-                  jobs = {r["id"] for r in timeline if r.get("type") == "Job" and r.get("name") == phase}
-                  cg = [r for r in timeline if r.get("type") == "Task" and r.get("parentId") in jobs and r.get("result") != "skipped"
-                        and (r.get("task") or {}).get("name") == "ComponentGovernanceComponentDetection"]
-                  if len(cg) != 1 or cg[0].get("result") != "succeeded" or not cg[0].get("log"):
-                      raise SystemExit(f"##[error]Expected one succeeded Component Governance step in job '{phase}', found "
-                                       + (", ".join(f"{r.get('name')}={r.get('result')}" for r in cg) or "none"))
-                  req = urllib.request.Request(cg[0]["log"]["url"], headers={"Authorization": auth})
-                  with urllib.request.urlopen(req, timeout=300) as r:
-                      scan_log = r.read().decode("utf-8", errors="replace")
-                  unscanned = sorted({m.group(1) for m in re.finditer(r"Processing of image (\S+) \(kind \"DockerImage\"\) failed", scan_log)})
-                  if unscanned or os_packages == 0:
-                      raise SystemExit("##[error]The snapshot is missing container images: "
-                                       + (", ".join(f"{i} could not be scanned" for i in unscanned) or "it has no operating system packages")
-                                       + ". Rerun once the images are published.")
-                  PY
+                  python3 "$CG_SCRIPTS/fetch_notice.py"
                 displayName: Fetch NOTICE for this run's snapshot
                 env:
                   SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
               - ${{ if eq(parameters.openNoticePr, true) }}:
-                - bash: |
-                    set -euo pipefail
-                    python3 - <<'PY'
-                    import base64, json, os, subprocess, urllib.error, urllib.parse, urllib.request
-
-                    env = os.environ
-
-                    def git(*args):
-                        return subprocess.run(["git", *args], check=True, capture_output=True, text=True).stdout.strip()
-
-                    def gh(url, token, method="GET", body=None):
-                        data = json.dumps(body).encode() if body is not None else None
-                        req = urllib.request.Request(url, method=method, data=data, headers={
-                            "Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
-                            "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json"})
-                        try:
-                            with urllib.request.urlopen(req, timeout=120) as r:
-                                raw = r.read()
-                                return json.loads(raw) if raw else None
-                        except urllib.error.HTTPError as e:
-                            raise SystemExit(f"##[error]{method} {url.split('?')[0]} -> HTTP {e.code}: {e.read()[:500]!r}")
-
-                    os.chdir(env["BUILD_SOURCESDIRECTORY"])
-                    repo = env["BUILD_REPOSITORY_NAME"]
-                    base = env["BUILD_SOURCEBRANCH"].removeprefix("refs/heads/")
-                    head = "chore/notice-refresh/" + base
-                    with open(os.path.join(env["NOTICE_OUT"], "NOTICE"), encoding="utf-8") as f:
-                        notice = f.read()
-                    current = open("NOTICE", encoding="utf-8").read() if os.path.exists("NOTICE") else None
-                    if current == notice:
-                        print(f"NOTICE on {base} already matches the Component Governance NOTICE; no pull request.")
-                        raise SystemExit(0)
-
-                    # The checkout persisted the service connection's GitHub App token as an HTTP extra header.
-                    headers = [l for l in git("config", "--get-regexp", r"^http\..*\.extraheader$").splitlines() if "authorization" in l.lower()]
-                    if not headers:
-                        raise SystemExit("##[error]The checkout did not persist a GitHub credential")
-                    user, token = base64.b64decode(headers[0].split()[-1]).decode().split(":", 1)
-                    print(f"##vso[task.setsecret]{token}")
-                    print(f"pushing with the persisted '{user}' credential")
-
-                    run_url = f'{env["SYSTEM_COLLECTIONURI"]}{env["SYSTEM_TEAMPROJECT"]}/_build/results?buildId={env["BUILD_BUILDID"]}'
-                    with open("NOTICE", "w", encoding="utf-8", newline="\n") as f:
-                        f.write(notice)
-                    git("config", "user.name", "osdu-spi component governance")
-                    git("config", "user.email", "osdu-spi-component-governance@users.noreply.github.com")
-                    # Only ever replace this automation's own branch, and only the tip this run saw.
-                    remote = git("ls-remote", "origin", f"refs/heads/{head}").split()
-                    expected = remote[0] if remote else ""
-                    if expected:
-                        git("fetch", "--depth=1", "origin", f"refs/heads/{head}")
-                        authors = git("log", "-1", "--format=%ae %ce", "FETCH_HEAD").split()
-                        if any(a != "osdu-spi-component-governance@users.noreply.github.com" for a in authors):
-                            raise SystemExit(f"##[error]{head} has commits from someone else ({' '.join(authors)}); merge or "
-                                             "close its pull request and delete the branch before the next refresh.")
-                        # Never replace a refresh generated from a newer commit of the base branch, or by a later run.
-                        trailers = git("log", "-1", "--format=%(trailers:key=Source-Commit,valueonly,separator=%x20)%x00"
-                                       "%(trailers:key=Build-Id,valueonly,separator=%x20)", "FETCH_HEAD").split("\x00")
-                        theirs, their_build = (t.strip() for t in trailers)
-                        ours, our_build = env["BUILD_SOURCEVERSION"], env["BUILD_BUILDID"]
-                        if not theirs or not their_build.isdigit():
-                            raise SystemExit(f"##[error]{head} has no Source-Commit/Build-Id trailers, so its age is unknown; "
-                                             "close its pull request and delete the branch before the next refresh.")
-                        if theirs == ours:
-                            if int(their_build) >= int(our_build):
-                                raise SystemExit(f"##[error]{head} was refreshed by build {their_build}, not older than this "
-                                                 f"build {our_build}; not replacing it.")
-                        else:
-                            status = gh(f"https://api.github.com/repos/{repo}/compare/{theirs}...{ours}", token)["status"]
-                            if status != "ahead":
-                                raise SystemExit(f"##[error]{head} holds a NOTICE generated from {theirs}, which is not older "
-                                                 f"than this run's {ours} (compare: {status}); not replacing it.")
-                    git("checkout", "-B", head)
-                    git("add", "NOTICE")
-                    # No [skip ci]: the pull request's required checks must run on this commit.
-                    git("commit", "-m", "chore(notice): refresh NOTICE from Component Governance",
-                        "-m", f"Generated by {run_url} from the Component Governance snapshot of {base}.",
-                        "-m", f"Source-Commit: {env['BUILD_SOURCEVERSION']}\nBuild-Id: {env['BUILD_BUILDID']}")
-                    git("push", f"--force-with-lease=refs/heads/{head}:{expected}", "origin", f"HEAD:refs/heads/{head}")
-                    print(f"pushed {head} at {git('rev-parse', 'HEAD')}")
-
-                    with open(os.path.join(env["NOTICE_OUT"], "notice-report.md"), encoding="utf-8") as f:
-                        report = f.read()
-                    title = "chore(notice): refresh NOTICE from Component Governance"
-                    body = (f"Replaces `NOTICE` with the Component Governance NOTICE for `{base}`.\n\n"
-                            f"Generated by {run_url}.\n\n"
-                            "Component Governance cannot produce entries for some shipped components (listed below); "
-                            "they are not yet supplemented.\n\n" + report)
-                    api = f"https://api.github.com/repos/{repo}/pulls"
-                    owner = repo.split("/")[0]
-                    query = urllib.parse.urlencode({"head": f"{owner}:{head}", "base": base, "state": "open"})
-                    existing = gh(f"{api}?{query}", token)
-                    if existing:
-                        pr = gh(existing[0]["url"], token, "PATCH", {"title": title, "body": body})
-                        print(f"updated pull request #{pr['number']} {pr['html_url']} (author {pr['user']['login']})")
-                    else:
-                        pr = gh(api, token, "POST", {"title": title, "head": head, "base": base, "body": body, "draft": True})
-                        print(f"opened pull request #{pr['number']} {pr['html_url']} (author {pr['user']['login']})")
-                    PY
+                - bash: python3 "$CG_SCRIPTS/notice_pr.py"
                   displayName: Open or update the NOTICE pull request
                   condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/heads/'))
+
+                - bash: |
+                    keys=$(git config --local --get-regexp '^http\..*\.extraheader$' | cut -d' ' -f1 | sort -u || true)
+                    for key in $keys; do git config --local --unset-all "$key"; done
+                  displayName: Remove the GitHub credential
+                  condition: always()
