@@ -2,16 +2,17 @@
 #
 # Runs in the OpenEnergyPlatform/OSDU-SPI Azure DevOps project through the Azure Pipelines GitHub App
 # service connection, on the 1ES Official pipeline template. The template's enforced Component
-# Governance step registers, after the steps below, what this fork ships:
-#   - the runtime Maven graph of the Azure provider (MAVEN_ARGS limits detection to that module),
-#   - the published container image (dockerImagesToScan, by digest),
+# Governance step registers what this fork ships:
+#   - the Maven graph of the Azure provider (MAVEN_ARGS limits detection to that module and its parents),
+#   - the published container image (dockerImagesToScan),
 #   - the OSDU community upstream commit the fork is built from (cgmanifest.json).
 # The template always registers (scanType Register), so every run, including manual runs of other
 # branches, records a snapshot for its branch. Compliance is read from main.
-# The template publishes job outputs before its Component Governance step, so the scan evidence
-# (runtime inventory, provenance, image digests) is compared with the registration afterwards.
-# 1ES network isolation (required CFSClean policies) applies to the steps below and blocks public package
-# registries such as Maven Central; the template's Component Governance step runs after isolation stops.
+#
+# 1ES network isolation applies to the job steps below and blocks public registries such as Maven Central
+# and ghcr.io. The steps therefore only prepare tools and inputs and do not build. The Component
+# Governance step runs after isolation stops: its Maven detector resolves the dependency tree from the
+# public repositories in pom.xml and it pulls the images itself.
 # Pilot note: once proven, this file moves to the Azure/osdu-spi template and is synced to every fork.
 
 name: $(Date:yyyyMMdd)$(Rev:.r)
@@ -21,11 +22,6 @@ parameters:
     displayName: Container images to scan (comma separated, empty to skip)
     type: string
     default: ghcr.io/azure/osdu-spi-partition:main-snapshot
-  # Network isolation (CFSClean) blocks Maven Central, so the build only works once Maven resolves through a CFS feed.
-  - name: buildInventory
-    displayName: Build the shipped module and record its runtime inventory (needs a CFS Maven feed)
-    type: boolean
-    default: false
 
 trigger:
   branches:
@@ -57,18 +53,12 @@ resources:
 variables:
   - name: POOL_NAME
     value: adme-custom-pool-eus2
-  - name: SHIPPED_MODULES
-    value: provider/partition-azure
-  - name: MAVEN_PROFILES
-    value: core,azure
   - name: MAVEN_VERSION
     value: 3.9.12
   - name: MAVEN_SHA512
     value: 0a1be79f02466533fc1a80abbef8796e4f737c46c6574ede5658b110899942a94db634477dfd3745501c80aef9aac0d4f841d38574373f7e2d24cce89d694f70
   - name: UPSTREAM_URL
     value: https://community.opengroup.org/osdu/platform/system/partition
-  - name: SETTINGS_FILE
-    value: $(Build.SourcesDirectory)/.mvn/community-maven.settings.xml
   - name: OUT
     value: $(Build.ArtifactStagingDirectory)/cg-scan
 
@@ -104,12 +94,17 @@ extends:
         displayName: Component Governance
         jobs:
           - job: cg_scan
-            displayName: Build and register shipped components
-            timeoutInMinutes: 120
+            displayName: Register shipped components
+            timeoutInMinutes: 60
+            variables:
+              # Read by Maven 3.9+ when the Component Governance Maven detector runs dependency:tree.
+              MAVEN_ARGS: --settings=$(Build.SourcesDirectory)/.mvn/community-maven.settings.xml -P core,azure -pl provider/partition-azure -am
+              # Read by the Component Governance step, which pulls the images after network isolation stops.
+              dockerImagesToScan: ${{ parameters.images }}
             templateContext:
               outputs:
                 - output: pipelineArtifact
-                  displayName: Publish scan evidence
+                  displayName: Publish scan inputs
                   targetPath: $(OUT)
                   artifactName: cg-scan
                   sbomEnabled: false
@@ -119,50 +114,22 @@ extends:
                 fetchDepth: 0
 
               - bash: |
-                  set -uo pipefail
-                  mkdir -p "$OUT"
-                  head -2 /etc/os-release
-                  for t in java mvn docker python3 jq git curl tar sha256sum sha512sum; do
-                    printf '%-10s %s\n' "$t" "$(command -v "$t" || echo MISSING)"
-                  done
-                  env | grep -E '^JAVA_HOME' | sort || echo "no JAVA_HOME_* variables"
-                  command -v docker >/dev/null && docker version --format 'docker server {{.Server.Version}}' 2>&1 | head -1
-                  probe() {
-                    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$2"); rc=$?
-                    if [ "$rc" -eq 0 ]; then r="HTTP $code"; else r="curl exit $rc (blocked or unreachable)"; fi
-                    printf '%-34s %s\n' "$1" "$r" | tee -a "$OUT/network-preflight.txt"
-                  }
-                  probe "maven central"         https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml
-                  probe "osdu gitlab maven"     https://community.opengroup.org/api/v4/groups/17/-/packages/maven/org/opengroup/osdu/os-core-common/maven-metadata.xml
-                  probe "apache archive"        https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz.sha512
-                  probe "apache dlcdn"          https://dlcdn.apache.org/maven/maven-3/
-                  probe "azure artifacts feed"  https://pkgs.dev.azure.com/OpenEnergyPlatform/dcd9d9fe-a1ca-4b31-bb47-0364ffe4fca7/_packaging/AdmeMavenFeed/maven/v1/org/apache/maven/apache-maven/maven-metadata.xml
-                  probe "ghcr registry"         https://ghcr.io/v2/
-                  probe "microsoft jdk"         https://aka.ms/download-jdk/microsoft-jdk-25-linux-x64.tar.gz.sha256sum.txt
-                  exit 0
-                displayName: Network and tooling preflight (diagnostic)
-
-              - bash: |
                   set -euo pipefail
                   for t in curl tar sha256sum sha512sum git; do
                     command -v "$t" >/dev/null || { echo "##[error]$t is required on the agent"; exit 1; }
                   done
                   v=$(sed -n 's:.*<java.version>\([0-9][0-9]*\)</java.version>.*:\1:p' pom.xml | head -1)
                   [ -n "$v" ] || { echo "##[error]java.version not found in pom.xml"; exit 1; }
-                  var="JAVA_HOME_${v}_X64"
-                  jh="${!var:-}"
-                  if [ -z "$jh" ] || [ ! -x "$jh/bin/java" ]; then
-                    jh="$AGENT_TOOLSDIRECTORY/microsoft-jdk-$v"
-                    if [ ! -x "$jh/bin/java" ]; then
-                      url="https://aka.ms/download-jdk/microsoft-jdk-$v-linux-x64.tar.gz"
-                      tgz="$AGENT_TEMPDIRECTORY/microsoft-jdk-$v.tar.gz"
-                      curl -fsSL --retry 3 -o "$tgz" "$url"
-                      want=$(curl -fsSL --retry 3 "$url.sha256sum.txt" | awk '{print $1}')
-                      got=$(sha256sum "$tgz" | awk '{print $1}')
-                      [ -n "$want" ] && [ "$want" = "$got" ] || { echo "##[error]JDK checksum mismatch: $got != $want"; exit 1; }
-                      mkdir -p "$jh"
-                      tar -xzf "$tgz" -C "$jh" --strip-components=1
-                    fi
+                  jh="$AGENT_TOOLSDIRECTORY/microsoft-jdk-$v"
+                  if [ ! -x "$jh/bin/java" ]; then
+                    url="https://aka.ms/download-jdk/microsoft-jdk-$v-linux-x64.tar.gz"
+                    tgz="$AGENT_TEMPDIRECTORY/microsoft-jdk-$v.tar.gz"
+                    curl -fsSL --retry 3 -o "$tgz" "$url"
+                    want=$(curl -fsSL --retry 3 "$url.sha256sum.txt" | awk '{print $1}')
+                    got=$(sha256sum "$tgz" | awk '{print $1}')
+                    [ -n "$want" ] && [ "$want" = "$got" ] || { echo "##[error]JDK checksum mismatch: $got != $want"; exit 1; }
+                    mkdir -p "$jh"
+                    tar -xzf "$tgz" -C "$jh" --strip-components=1
                   fi
                   mh="$AGENT_TOOLSDIRECTORY/apache-maven-$MAVEN_VERSION"
                   if [ ! -x "$mh/bin/mvn" ]; then
@@ -178,26 +145,13 @@ extends:
                     tar -xzf "$tgz" -C "$mh" --strip-components=1
                   fi
                   "$jh/bin/java" -version 2>&1 | head -1
-                  JAVA_HOME="$jh" "$mh/bin/mvn" -v | head -1
+                  JAVA_HOME="$jh" MAVEN_ARGS= "$mh/bin/mvn" -v | head -1
+                  echo "MAVEN_ARGS=$MAVEN_ARGS"
+                  echo "dockerImagesToScan=${DOCKERIMAGESTOSCAN:-}"
                   echo "##vso[task.setvariable variable=JAVA_HOME]$jh"
                   echo "##vso[task.prependpath]$jh/bin"
                   echo "##vso[task.prependpath]$mh/bin"
-                displayName: Set up JDK (pom.xml java.version) and Maven
-
-              - bash: |
-                  set -euo pipefail
-                  unset MAVEN_ARGS
-                  echo "source:  $(Build.Repository.Name) $(Build.SourceBranch) $(Build.SourceVersion) ($(Build.Reason))"
-                  echo "modules: $SHIPPED_MODULES (profiles $MAVEN_PROFILES)"
-                  mkdir -p "$OUT"
-                  mvn -B -ntp -q --settings="$SETTINGS_FILE" -P "$MAVEN_PROFILES" -pl "$SHIPPED_MODULES" -am install -DskipTests
-                  mvn -B -ntp -q --settings="$SETTINGS_FILE" -P "$MAVEN_PROFILES" -pl "$SHIPPED_MODULES" dependency:list \
-                    -DincludeScope=runtime -DexcludeTransitive=false -DoutputFile="$OUT/dependency-list.txt"
-                  grep -E '^\s+[^ ]+:[^ ]+:[^ ]+:[^ ]+' "$OUT/dependency-list.txt" \
-                    | sed -E 's/^\s+//; s/ .*//' | awk -F: '{print $1":"$2":"$(NF-1)}' | sort -u > "$OUT/inventory.txt"
-                  echo "runtime inventory of $SHIPPED_MODULES: $(wc -l < "$OUT/inventory.txt") components"
-                displayName: Build shipped module and runtime inventory
-                condition: and(succeeded(), eq('${{ parameters.buildInventory }}', 'true'))
+                displayName: Set up JDK (pom.xml java.version) and Maven for detection
 
               - bash: |
                   set -euo pipefail
@@ -223,42 +177,7 @@ extends:
                     done
                     printf '\n  ]\n}\n'
                   } > cgmanifest.json
+                  mkdir -p "$OUT"
                   cp cgmanifest.json "$OUT/cgmanifest.json"
                   cat cgmanifest.json
                 displayName: Record upstream provenance in cgmanifest.json
-
-              - bash: |
-                  set -euo pipefail
-                  refs=()
-                  IFS=',' read -ra imgs <<< '${{ parameters.images }}'
-                  if ! command -v docker >/dev/null; then
-                    echo "##vso[task.logissue type=warning]docker is not available on the agent; images were not registered: ${{ parameters.images }}"
-                  else
-                    for i in "${imgs[@]}"; do
-                      [ -n "$i" ] || continue
-                      if docker pull -q "$i" >/dev/null; then
-                        d=$(docker inspect --format '{{index .RepoDigests 0}}' "$i")
-                        echo "$i -> $d"
-                        refs+=("$d")
-                      else
-                        echo "##vso[task.logissue type=warning]Could not pull $i under network isolation; Component Detection pulls it by tag after isolation stops"
-                        refs+=("$i")
-                      fi
-                    done
-                  fi
-                  list=$(IFS=','; echo "${refs[*]:-}")
-                  printf '%s\n' "${refs[@]:-}" > "$OUT/images.txt"
-                  echo "##vso[task.setvariable variable=dockerImagesToScan]$list"
-                  echo "dockerImagesToScan=$list"
-                displayName: Resolve published images by digest
-                condition: and(succeeded(), ne('${{ parameters.images }}', ''))
-
-              - bash: |
-                  set -euo pipefail
-                  args="--settings=$SETTINGS_FILE -P $MAVEN_PROFILES -pl $SHIPPED_MODULES -am"
-                  echo "##vso[task.setvariable variable=MAVEN_ARGS]$args"
-                  echo "MAVEN_ARGS=$args"
-                  echo "dockerImagesToScan=${DOCKERIMAGESTOSCAN:-}"
-                  mvn -v | head -1
-                displayName: Scope the 1ES Component Governance scan
-
