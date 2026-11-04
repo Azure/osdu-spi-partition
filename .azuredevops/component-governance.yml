@@ -189,7 +189,7 @@ extends:
 
           # Runs after cg_scan because the template adds its Component Governance step after all steps of a job,
           # so a NOTICE step inside cg_scan would read the previous snapshot. No checkout: the template's
-          # Component Governance step at the end of this job has nothing to register.
+          # Component Governance step at the end of this job registers an empty snapshot for this job's phase.
           - job: cg_notice
             displayName: Generate NOTICE from Component Governance
             dependsOn: cg_scan
