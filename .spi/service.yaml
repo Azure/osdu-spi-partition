@@ -24,3 +24,5 @@ tests:
       CLIENT_TENANT: { source: partition }
       INTEGRATION_TESTER_ACCESS_TOKEN: { source: token }
       NO_DATA_ACCESS_TESTER_ACCESS_TOKEN: { source: noAccessToken }
+componentGovernance:
+  upstream: https://community.opengroup.org/osdu/platform/system/partition

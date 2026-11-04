@@ -1,27 +1,34 @@
-# Component Governance registration for osdu-spi-partition (pilot, ADO Feature 84645).
+# Component Governance registration and NOTICE for an OSDU SPI service fork (ADO Feature 84645).
+#
+# One file for every java-maven-azure fork. Per-fork inputs come from the componentGovernance section of
+# .spi/service.yaml, read at run time:
+#   upstream           OSDU community project URL (required)
+#   module             shipped Spring Boot module (default: the one under provider/*-azure)
+#   profiles           Maven profiles (default: core, azure)
+#   ignoreDirectories  directories Component Governance must not scan, such as Python test suites
 #
 # Runs in the OpenEnergyPlatform/OSDU-SPI Azure DevOps project through the Azure Pipelines GitHub App
 # service connection, on the 1ES Official pipeline template. The template's enforced Component
-# Governance step registers what this fork ships:
-#   - the Maven graph of the Azure provider (MAVEN_ARGS limits detection to that module and its parents),
-#   - the published container image (dockerImagesToScan),
-#   - the OSDU community upstream commit the fork is built from (cgmanifest.json).
+# Governance step registers what the fork ships:
+#   - the Maven graph of the shipped module (MAVEN_ARGS limits detection to it and its parents),
+#   - the published container image, ghcr.io/<owner>/<repo>:sha-<commit> (dockerImagesToScan),
+#   - the OSDU community upstream commits and the Application Insights agent (cgmanifest.json).
 # The template always registers (scanType Register), so every run, including manual runs of other
 # branches, records a snapshot for its branch. Compliance is read from main.
 #
 # 1ES network isolation applies to the job steps below and blocks public registries such as Maven Central
 # and ghcr.io. The steps therefore only prepare tools and inputs and do not build. The Component
 # Governance step runs after isolation stops: its Maven detector resolves the dependency tree from the
-# public repositories in pom.xml and it pulls the images itself.
-# Pilot note: once proven, this file moves to the Azure/osdu-spi template and is synced to every fork.
+# public repositories in pom.xml and it pulls the image itself.
 
 name: $(Date:yyyyMMdd)$(Rev:.r)
 
 parameters:
+  # auto scans the image the fork's Validation workflow published for the built commit.
   - name: images
-    displayName: Container images to scan (comma separated, empty to skip)
+    displayName: Container images to scan (comma separated, or auto for the built commit's image)
     type: string
-    default: ghcr.io/azure/osdu-spi-partition:main-snapshot
+    default: auto
   # Opens or updates a draft pull request that replaces NOTICE, targeting the branch this run built.
   - name: openNoticePr
     displayName: Open a NOTICE pull request into the built branch
@@ -62,8 +69,6 @@ variables:
     value: 3.9.12
   - name: MAVEN_SHA512
     value: 0a1be79f02466533fc1a80abbef8796e4f737c46c6574ede5658b110899942a94db634477dfd3745501c80aef9aac0d4f841d38574373f7e2d24cce89d694f70
-  - name: UPSTREAM_URL
-    value: https://community.opengroup.org/osdu/platform/system/partition
   - name: OUT
     value: $(Build.ArtifactStagingDirectory)/cg-scan
   - name: NOTICE_OUT
@@ -106,11 +111,6 @@ extends:
           - job: cg_scan
             displayName: ${{ variables.CG_SCAN_PHASE }}
             timeoutInMinutes: 60
-            variables:
-              # Read by Maven 3.9+ when the Component Governance Maven detector runs dependency:tree.
-              MAVEN_ARGS: --settings=$(Build.SourcesDirectory)/.mvn/community-maven.settings.xml -P core,azure -pl provider/partition-azure -am
-              # Read by the Component Governance step, which pulls the images after network isolation stops.
-              dockerImagesToScan: ${{ parameters.images }}
             templateContext:
               outputs:
                 - output: pipelineArtifact
@@ -122,6 +122,173 @@ extends:
             steps:
               - checkout: self
                 fetchDepth: 0
+
+              # Reads componentGovernance from .spi/service.yaml with the template's descriptor parser and sets the
+              # inputs the Component Governance step reads: MAVEN_ARGS (Maven 3.9+ reads it when the Maven detector
+              # runs dependency:tree), dockerImagesToScan and ComponentDetection.IgnoreDirectories. Writes
+              # cgmanifest.json with the upstream commits and the Application Insights agent.
+              - bash: |
+                  set -euo pipefail
+                  command -v python3 >/dev/null || { echo "##[error]python3 is required on the agent"; exit 1; }
+                  python3 - <<'PY'
+                  import json, os, re, subprocess, sys
+
+                  env = os.environ
+                  src = env.get("BUILD_SOURCESDIRECTORY") or os.getcwd()
+                  os.chdir(src)
+                  out = env["OUT"]
+                  os.makedirs(out, exist_ok=True)
+
+
+                  def fail(msg):
+                      print(f"##[error]{msg}")
+                      sys.exit(1)
+
+
+                  def git(*args):
+                      return subprocess.run(["git", *args], check=True, capture_output=True, text=True).stdout.strip()
+
+
+                  sys.dont_write_bytecode = True
+                  sys.path.insert(0, os.path.join(src, ".github", "actions", "acceptance-resolver"))
+                  try:
+                      from resolve import Halt, parse_descriptor_yaml
+                  except ImportError as e:
+                      fail(f"The template's descriptor parser (.github/actions/acceptance-resolver/resolve.py) is not available: {e}")
+
+                  descriptor_path = env.get("CG_DESCRIPTOR") or ".spi/service.yaml"
+                  try:
+                      with open(descriptor_path, encoding="utf-8") as f:
+                          desc = parse_descriptor_yaml(f.read())
+                  except FileNotFoundError:
+                      fail(f"{descriptor_path} is missing")
+                  except Halt as e:
+                      fail(f"{descriptor_path}: {e}")
+
+                  service = desc.get("service") or {}
+                  name = service.get("name")
+                  if service.get("archetype") != "java-maven-azure":
+                      fail(f"Unsupported archetype {service.get('archetype')!r}; this pipeline handles java-maven-azure")
+                  cg = desc.get("componentGovernance")
+                  if not isinstance(cg, dict):
+                      fail(f"{descriptor_path} has no componentGovernance section")
+                  unknown = sorted(set(cg) - {"upstream", "module", "profiles", "ignoreDirectories"})
+                  if unknown:
+                      fail(f"Unknown componentGovernance keys: {', '.join(unknown)}")
+
+
+                  def rel_dir(value, key):
+                      if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*", value) or ".." in value.split("/"):
+                          fail(f"componentGovernance.{key}: {value!r} is not a relative directory path")
+                      if not os.path.isdir(value):
+                          fail(f"componentGovernance.{key}: {value} does not exist")
+                      return value
+
+
+                  upstream = cg.get("upstream")
+                  if not isinstance(upstream, str) or not re.fullmatch(r"https://community\.opengroup\.org/osdu(/[A-Za-z0-9._-]+)+", upstream):
+                      fail(f"componentGovernance.upstream: {upstream!r} is not an OSDU community project URL")
+                  upstream = upstream.removesuffix(".git")
+
+                  profiles = cg.get("profiles", ["core", "azure"])
+                  if not isinstance(profiles, list) or not profiles or not all(isinstance(p, str) and re.fullmatch(r"[A-Za-z0-9._-]+", p) for p in profiles):
+                      fail(f"componentGovernance.profiles: {profiles!r} is not a list of Maven profile ids")
+
+                  if "module" in cg:
+                      module = rel_dir(cg["module"], "module")
+                  else:
+                      # Same convention as the docker-build action's JAR resolution: the Spring Boot module under provider/*-azure.
+                      candidates = []
+                      for top in sorted(os.listdir("provider")) if os.path.isdir("provider") else []:
+                          if not top.endswith("-azure") or not os.path.isdir(f"provider/{top}"):
+                              continue
+                          subs = sorted(f"provider/{top}/{s}" for s in os.listdir(f"provider/{top}") if os.path.isdir(f"provider/{top}/{s}"))
+                          for d in [f"provider/{top}"] + subs:
+                              pom = os.path.join(d, "pom.xml")
+                              if os.path.isfile(pom) and "spring-boot-maven-plugin" in open(pom, encoding="utf-8").read():
+                                  candidates.append(d)
+                      preferred = [d for d in candidates if d.startswith(f"provider/{name}-azure")]
+                      picks = preferred if len(preferred) == 1 else candidates
+                      if len(picks) != 1:
+                          fail(f"Cannot infer the shipped module (Spring Boot modules under provider/*-azure: {candidates or 'none'}); set componentGovernance.module")
+                      module = picks[0]
+                  if not os.path.isfile(os.path.join(module, "pom.xml")):
+                      fail(f"Shipped module {module} has no pom.xml")
+
+                  ignore = cg.get("ignoreDirectories", [])
+                  if not isinstance(ignore, list):
+                      fail("componentGovernance.ignoreDirectories must be a list")
+                  ignore = [rel_dir(d, "ignoreDirectories") for d in ignore]
+                  if any(module == d or module.startswith(d + "/") for d in ignore):
+                      fail(f"componentGovernance.ignoreDirectories must not contain the shipped module {module}")
+
+                  settings = os.path.join(src, ".mvn", "community-maven.settings.xml")
+                  if not os.path.isfile(settings):
+                      fail(".mvn/community-maven.settings.xml is missing")
+                  maven_args = f"--settings={settings} -P {','.join(profiles)} -pl {module} -am"
+
+                  owner, repo = env["BUILD_REPOSITORY_NAME"].lower().split("/", 1)
+                  sha = env["BUILD_SOURCEVERSION"]
+                  images = env.get("CG_IMAGES", "").strip()
+                  if images in ("", "auto"):
+                      images = f"ghcr.io/{owner}/{repo}:sha-{sha[:12]}"
+                  if not re.fullmatch(r"[A-Za-z0-9._/:@-]+(,[A-Za-z0-9._/:@-]+)*", images):
+                      fail(f"images: {images!r} is not a comma separated list of image references")
+
+                  # Upstream provenance: the newest generated upstream tree reachable from HEAD, plus seed snapshots.
+                  generated = ("chore: generate filtered upstream tree", "chore: mirror upstream tree")
+                  grep = ["--grep=^Upstream-Sha: [0-9a-f]\\{40\\}$", "--grep=^Filter-Rev: ", "--all-match"]
+                  cands = [c for c in git("rev-list", "--topo-order", *grep, "HEAD").split() if git("log", "-1", "--format=%s", c) in generated]
+                  if not cands:
+                      fail("No generated upstream commit is reachable from HEAD")
+                  chosen = cands[0]
+                  others = [c for c in git("rev-list", *grep, "HEAD", f"^{chosen}").split() if git("log", "-1", "--format=%s", c) in generated]
+                  if others:
+                      fail(f"Ambiguous upstream provenance: generated commits {others} are not ancestors of {chosen}")
+                  up = "".join(git("log", "-1", "--format=%(trailers:key=Upstream-Sha,valueonly,separator=)", chosen).split())
+                  # generate-branch.sh makes upstream the last parent: second after a base, sole parent on the first generation.
+                  parents = git("log", "-1", "--format=%P", chosen).split()
+                  if len(parents) not in (1, 2) or up != parents[-1]:
+                      fail(f"Upstream-Sha of {chosen} is not its upstream parent (parents: {parents})")
+                  seeds = [l.split()[1] for l in git("log", "HEAD", "--grep=^Seeded-From: ", "--format=%(trailers:key=Seeded-From,valueonly)").splitlines() if len(l.split()) >= 2]
+                  shas = list(dict.fromkeys([up] + seeds))
+                  if not all(re.fullmatch(r"[0-9a-f]{40}", s) for s in shas):
+                      fail(f"Invalid upstream commit hashes: {shas}")
+                  registrations = [{"component": {"type": "git", "git": {"repositoryUrl": upstream, "commitHash": s}}} for s in shas]
+
+                  # The canonical image adds the Application Insights agent outside Maven (build/Dockerfile).
+                  agent = None
+                  if os.path.isfile("build/Dockerfile"):
+                      m = re.search(r'^ARG APPLICATIONINSIGHTS_AGENT_VERSION="?([0-9][0-9A-Za-z.\-]*)"?\s*$', open("build/Dockerfile", encoding="utf-8").read(), re.M)
+                      if m:
+                          agent = m.group(1)
+                          registrations.append({"component": {"type": "maven", "maven": {
+                              "groupId": "com.microsoft.azure", "artifactId": "applicationinsights-agent", "version": agent}}})
+                  if not agent:
+                      print("##vso[task.logissue type=warning]build/Dockerfile declares no APPLICATIONINSIGHTS_AGENT_VERSION; the agent was not registered")
+
+                  manifest = {"$schema": "https://json.schemastore.org/component-detection-manifest.json", "version": 1, "registrations": registrations}
+                  for p in ("cgmanifest.json", os.path.join(out, "cgmanifest.json")):
+                      with open(p, "w", encoding="utf-8", newline="\n") as f:
+                          json.dump(manifest, f, indent=2)
+                          f.write("\n")
+
+                  resolved = {"service": name, "upstream": upstream, "upstreamCommit": up, "generatedCommit": chosen, "seeds": seeds,
+                              "module": module, "profiles": profiles, "mavenArgs": maven_args, "images": images,
+                              "ignoreDirectories": ignore, "applicationInsightsAgent": agent}
+                  with open(os.path.join(out, "cg-inputs.json"), "w", encoding="utf-8", newline="\n") as f:
+                      json.dump(resolved, f, indent=2)
+                      f.write("\n")
+                  for k, v in resolved.items():
+                      print(f"{k}: {v}")
+                  print(f"##vso[task.setvariable variable=MAVEN_ARGS]{maven_args}")
+                  print(f"##vso[task.setvariable variable=dockerImagesToScan]{images}")
+                  if ignore:
+                      print(f"##vso[task.setvariable variable=ComponentDetection.IgnoreDirectories]{','.join(ignore)}")
+                  PY
+                displayName: Resolve component governance inputs from .spi/service.yaml
+                env:
+                  CG_IMAGES: ${{ parameters.images }}
 
               - bash: |
                   set -euo pipefail
@@ -163,45 +330,21 @@ extends:
                   echo "##vso[task.prependpath]$mh/bin"
                 displayName: Set up JDK (pom.xml java.version) and Maven for detection
 
-              - bash: |
-                  set -euo pipefail
-                  is_generated() { case "$(git log -1 --format=%s "$1")" in "chore: generate filtered upstream tree"|"chore: mirror upstream tree") return 0;; esac; return 1; }
-                  filt=(--grep='^Upstream-Sha: [0-9a-f]\{40\}$' --grep='^Filter-Rev: ' --all-match)
-                  cands=(); while read -r c; do is_generated "$c" && cands+=("$c"); done < <(git rev-list --topo-order "${filt[@]}" HEAD)
-                  [ "${#cands[@]}" -gt 0 ] || { echo "##[error]No generated upstream commit is reachable from HEAD"; exit 1; }
-                  chosen=${cands[0]}
-                  others=0; while read -r c; do is_generated "$c" && others=$((others+1)); done < <(git rev-list "${filt[@]}" HEAD "^$chosen")
-                  [ "$others" -eq 0 ] || { echo "##[error]Ambiguous upstream provenance"; exit 1; }
-                  up=$(git log -1 --format='%(trailers:key=Upstream-Sha,valueonly,separator=)' "$chosen" | tr -d '[:space:]')
-                  [ "$up" = "$(git rev-parse "$chosen^2")" ] || { echo "##[error]Upstream-Sha is not the second parent of $chosen"; exit 1; }
-                  seeds=$(git log HEAD --grep='^Seeded-From: ' --format='%(trailers:key=Seeded-From,valueonly)' | awk 'NF >= 2 {print $2}')
-                  shas=$(printf '%s\n' "$up" $seeds | awk '!seen[$0]++')
-                  echo "upstream: $UPSTREAM_URL @ $up (generated commit $chosen); seeds: ${seeds:-none}"
-                  {
-                    printf '{\n  "$schema": "https://json.schemastore.org/component-detection-manifest.json",\n  "version": 1,\n  "registrations": [\n'
-                    sep=""
-                    for sha in $shas; do
-                      [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "##[error]Invalid commit hash: $sha" >&2; exit 1; }
-                      printf '%s    {"component": {"type": "git", "git": {"repositoryUrl": "%s", "commitHash": "%s"}}}' "$sep" "$UPSTREAM_URL" "$sha"
-                      sep=$',\n'
-                    done
-                    printf '\n  ]\n}\n'
-                  } > cgmanifest.json
-                  mkdir -p "$OUT"
-                  cp cgmanifest.json "$OUT/cgmanifest.json"
-                  cat cgmanifest.json
-                displayName: Record upstream provenance in cgmanifest.json
 
           # Runs after cg_scan because the template adds its Component Governance step after all steps of a job,
-          # so a NOTICE step inside cg_scan would read the previous snapshot. The checkout is either none or a
-          # sparse checkout of NOTICE alone, so the template's Component Governance step at the end of this job
-          # registers an empty snapshot for this job's phase.
+          # so a NOTICE step inside cg_scan would read the previous snapshot. Component Governance is disabled
+          # for this job: it checks out at most NOTICE, and an empty snapshot would become the branch's most
+          # recent scan, which Component Governance then keeps as the production snapshot.
           - job: cg_notice
             displayName: Generate NOTICE from Component Governance
             dependsOn: cg_scan
             condition: succeeded()
             timeoutInMinutes: 30
             templateContext:
+              sdl:
+                componentgovernance:
+                  enabled: false
+                  justificationForDisabling: 'This job only downloads the NOTICE that Component Governance generates from the cg_scan job of the same run, which registers the components. It checks out at most the NOTICE file, so a scan here would record an empty snapshot that replaces the real one as the production snapshot of the branch.'
               outputs:
                 - output: pipelineArtifact
                   displayName: Publish Component Governance NOTICE
@@ -224,7 +367,7 @@ extends:
                   command -v python3 >/dev/null || { echo "##[error]python3 is required on the agent"; exit 1; }
                   mkdir -p "$NOTICE_OUT"
                   python3 - <<'PY'
-                  import base64, collections, json, os, re, time, urllib.error, urllib.parse, urllib.request
+                  import base64, json, os, re, time, urllib.error, urllib.request
 
                   env = os.environ
                   auth = "Basic " + base64.b64encode((":" + env["SYSTEM_ACCESSTOKEN"]).encode()).decode()
@@ -286,48 +429,49 @@ extends:
                       m = re.match(r"(\S+) (\S+) - (.+)$", block.strip().splitlines()[0].strip()) if block.strip() else None
                       if m:
                           entries[(m.group(1).lower(), m.group(2).lower())] = m.group(3)
-                  reasons = collections.defaultdict(set)
-                  for reason, items in excluded.items():
-                      for it in items:
-                          if isinstance(it, str):
-                              p = it.split("/")
-                              if len(p) >= 5:
-                                  reasons[(f"{p[2]}/{p[3]}".lower(), p[4].lower())].add(reason)
-                          elif it.get("type") == "maven":
-                              reasons[(it["displayName"].replace(":", "/").lower(), it["displayVersion"].lower())].add(reason)
 
-                  moniker = urllib.parse.quote(urllib.parse.quote(branch["moniker"], safe=""), safe="")
-                  regs = call(f"{api}/{gid}/branches/{moniker}/registrations?{ver}")["registrations"]
-                  maven = sorted({(r["flatComponentVersion"]["displayName"].replace(":", "/").lower(), r["flatComponentVersion"]["displayVersion"].lower())
-                                  for r in regs if r["flatComponentVersion"]["type"] == "maven"
-                                  and any(p.get("phaseDisplayName") == phase for p in r.get("pipelines", []))})
-                  missing = collections.defaultdict(list)
-                  for gav in maven:
-                      if gav not in entries:
-                          missing[",".join(sorted(reasons.get(gav, []))) or "noReasonGiven"].append(f"{gav[0]}:{gav[1]}")
-                  no_copyright = sum(1 for gav in entries if "noCopyright" in reasons.get(gav, ()))
+                  # excludedComponents accounts for every registered component of the snapshot that has no NOTICE entry.
+                  # noDefinition/noCopyright items are ClearlyDefined coordinates; the others are component objects.
+                  def label(it):
+                      if isinstance(it, str):
+                          p = it.split("/")
+                          if len(p) < 5:
+                              return it
+                          return f"{p[3]}:{p[4]}" if p[2] == "-" else f"{p[2]}:{p[3]}:{p[4]}"
+                      kind = it.get("type") or "os"
+                      return f"{it.get('displayName')}:{it.get('displayVersion')}" + ("" if kind == "maven" else f" ({kind})")
+
+                  gaps = {k: sorted({label(i) for i in v}) for k, v in sorted(excluded.items()) if v and k not in ("noCopyright", "notSupported")}
+                  os_packages = len(excluded.get("notSupported") or [])
+                  no_copyright = len(excluded.get("noCopyright") or [])
                   report = {"governedRepository": gid, "snapshotType": tid, "build": build, "noticeEntries": len(entries),
-                            "noticeEntriesWithoutCopyright": no_copyright, "registeredMaven": len(maven),
-                            "registeredMavenNotInNotice": {k: v for k, v in sorted(missing.items())},
-                            "excludedCounts": {k: len(v) for k, v in excluded.items()}}
+                            "noticeEntriesWithoutCopyright": no_copyright, "imagePackagesNotSupported": os_packages,
+                            "notInNotice": gaps, "excludedCounts": {k: len(v) for k, v in excluded.items()}}
                   with open(os.path.join(out, "notice-report.json"), "w") as f:
                       json.dump(report, f, indent=2)
 
                   print(f"NOTICE: {len(content)} characters, {len(entries)} entries ({no_copyright} without a copyright line)")
                   print("excluded by reason:", report["excludedCounts"])
-                  print(f"registered Maven components: {len(maven)}, not in NOTICE: {sum(len(v) for v in missing.values())}")
                   md = ["## Component Governance NOTICE", "",
                         f"Snapshot type {tid} of build {build}: {len(entries)} entries, {no_copyright} without a copyright line.", "",
-                        "Registered Maven components that are not in the NOTICE. Registrations include test scope, so this is not",
-                        "the shipped set; the completeness check against the shipped jar runs where the jar is built.", "",
+                        "Registered components that Component Governance leaves out of the NOTICE. Registrations include test",
+                        "scope, so `excluded` is mostly test dependencies; the completeness check against the shipped jar runs",
+                        f"where the jar is built. The {os_packages} operating system packages of the container image are not",
+                        "supported by the Component Governance NOTICE.", "",
                         "| Reason | Count |", "| --- | --- |"]
-                  md += [f"| {k} | {len(v)} |" for k, v in sorted(missing.items())]
-                  for k, v in sorted(missing.items()):
+                  md += [f"| {k} | {len(v)} |" for k, v in gaps.items()]
+                  for k, v in gaps.items():
                       print(f"  {k} ({len(v)}): " + ", ".join(v))
                       md += ["", f"**{k}**: " + ", ".join(f"`{x}`" for x in v)]
                   with open(os.path.join(out, "notice-report.md"), "w") as f:
                       f.write("\n".join(md) + "\n")
                   print(f"##vso[task.uploadsummary]{os.path.join(out, 'notice-report.md')}")
+                  # Every java-maven-azure fork ships a container image, so a snapshot without operating system packages means
+                  # the image was not scanned (for example, not yet published for this commit). The snapshot is already
+                  # registered, and until a complete scan replaces it the image's alerts can show as fixed, so fail loudly.
+                  if os_packages == 0:
+                      raise SystemExit("##[error]The snapshot has no container image packages: the Component Governance step of "
+                                       "the scan job did not scan the image. Check its log; rerun once the image is published.")
                   PY
                 displayName: Fetch NOTICE for this run's snapshot
                 env:
