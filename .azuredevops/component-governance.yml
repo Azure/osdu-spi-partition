@@ -33,7 +33,7 @@ parameters:
   - name: images
     displayName: Container images to scan (comma separated, or auto for the built commit's images)
     type: string
-    default: auto
+    default: ghcr.io/azure/osdu-spi-partition:sha-716ed843e371
   # Opens or updates a draft pull request that replaces NOTICE, targeting the branch this run built.
   # Scheduled runs of main always do.
   - name: openNoticePr
@@ -54,11 +54,17 @@ trigger:
 pr: none
 
 schedules:
-  - cron: '0 6 * * 1'
-    displayName: Weekly registration and NOTICE pull request of main
+  - cron: '12 23 * * *'
+    displayName: Pilot test of the weekly run (temporary)
     branches:
       include:
-        - main
+        - ci/component-governance-pipeline
+    always: true
+  - cron: '37 23 * * *'
+    displayName: Pilot test of the weekly run (temporary)
+    branches:
+      include:
+        - ci/component-governance-pipeline
     always: true
 
 resources:
