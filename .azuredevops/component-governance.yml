@@ -61,6 +61,11 @@ variables:
     value: https://community.opengroup.org/osdu/platform/system/partition
   - name: OUT
     value: $(Build.ArtifactStagingDirectory)/cg-scan
+  - name: NOTICE_OUT
+    value: $(Build.ArtifactStagingDirectory)/cg-notice
+  # The NOTICE job finds this run's snapshot by the scan job's display name.
+  - name: CG_SCAN_PHASE
+    value: Register shipped components
 
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
@@ -94,7 +99,7 @@ extends:
         displayName: Component Governance
         jobs:
           - job: cg_scan
-            displayName: Register shipped components
+            displayName: ${{ variables.CG_SCAN_PHASE }}
             timeoutInMinutes: 60
             variables:
               # Read by Maven 3.9+ when the Component Governance Maven detector runs dependency:tree.
@@ -181,3 +186,136 @@ extends:
                   cp cgmanifest.json "$OUT/cgmanifest.json"
                   cat cgmanifest.json
                 displayName: Record upstream provenance in cgmanifest.json
+
+          # Runs after cg_scan because the template adds its Component Governance step after all steps of a job,
+          # so a NOTICE step inside cg_scan would read the previous snapshot. No checkout: the template's
+          # Component Governance step at the end of this job has nothing to register.
+          - job: cg_notice
+            displayName: Generate NOTICE from Component Governance
+            dependsOn: cg_scan
+            condition: succeeded()
+            timeoutInMinutes: 30
+            templateContext:
+              outputs:
+                - output: pipelineArtifact
+                  displayName: Publish Component Governance NOTICE
+                  targetPath: $(NOTICE_OUT)
+                  artifactName: cg-notice
+                  sbomEnabled: false
+                  condition: succeededOrFailed()
+            steps:
+              - checkout: none
+
+              - bash: |
+                  set -euo pipefail
+                  command -v python3 >/dev/null || { echo "##[error]python3 is required on the agent"; exit 1; }
+                  mkdir -p "$NOTICE_OUT"
+                  python3 - <<'PY'
+                  import base64, collections, json, os, re, time, urllib.error, urllib.parse, urllib.request
+
+                  env = os.environ
+                  auth = "Basic " + base64.b64encode((":" + env["SYSTEM_ACCESSTOKEN"]).encode()).decode()
+                  out = env["NOTICE_OUT"]
+                  ver = "api-version=7.1-preview.1"
+
+                  def call(url, tries=3):
+                      for attempt in range(1, tries + 1):
+                          req = urllib.request.Request(url, headers={"Authorization": auth, "Accept": "application/json"})
+                          try:
+                              with urllib.request.urlopen(req, timeout=300) as r:
+                                  return json.loads(r.read())
+                          except urllib.error.HTTPError as e:
+                              msg = f"GET {url.split('?')[0]} -> HTTP {e.code}: {e.read()[:300]!r}"
+                              if e.code < 500 or attempt == tries:
+                                  raise SystemExit(f"##[error]{msg}")
+                          except (urllib.error.URLError, TimeoutError) as e:
+                              msg = f"GET {url.split('?')[0]} -> {e}"
+                              if attempt == tries:
+                                  raise SystemExit(f"##[error]{msg}")
+                          print(f"{msg}; retrying in 30 s")
+                          time.sleep(30)
+
+                  proj, repo, build = env["SYSTEM_TEAMPROJECTID"], env["BUILD_REPOSITORY_NAME"], env["BUILD_BUILDID"]
+                  gov = call(f'{env["SYSTEM_COLLECTIONURI"]}_apis/resourceareas/7136235f-d277-4c27-9194-e3ada05fea2c?{ver}')["locationUrl"]
+                  api = f"{gov.rstrip('/')}/{proj}/_apis/componentgovernance/governedrepositories"
+                  repos = [r for r in call(f"{api}?{ver}")["value"] if (r.get("name") or "").lower() == repo.lower()]
+                  if len(repos) != 1:
+                      raise SystemExit(f"##[error]Expected one governed repository named {repo}, found {len(repos)}")
+                  gid = repos[0]["id"]
+
+                  # Registration is processed asynchronously; wait until the snapshot of this run's scan job is visible.
+                  prefix = f'vsts://{env["SYSTEM_COLLECTIONID"]}/{proj}/{env["SYSTEM_DEFINITIONID"]}/'.lower()
+                  phase = env["CG_SCAN_PHASE"]
+                  for attempt in range(1, 21):
+                      found = [(b, t) for b in call(f"{api}/{gid}/branches?{ver}")["value"] for t in b.get("snapshotTypes", [])
+                               if t["buildType"].lower().startswith(prefix) and t.get("phaseDisplayName") == phase
+                               and str(t.get("latestScanBuildIdentifier")) == build]
+                      if found:
+                          break
+                      print(f"Snapshot of build {build} is not visible yet (attempt {attempt}); waiting 30 s")
+                      time.sleep(30)
+                  if len(found) != 1:
+                      raise SystemExit(f"##[error]Expected one snapshot for build {build} job '{phase}', found {len(found)}")
+                  branch, stype = found[0]
+                  tid = stype["typeId"]
+                  print(f"governed repository {gid}, branch {branch['moniker']}, snapshot type {tid}, build {build}")
+
+                  res = call(f"{api}/{gid}/Notice?snapshotTypeId={tid}&format=text&{ver}")
+                  content = res["content"].replace("\r\n", "\n")
+                  excluded = res.get("excludedComponents") or {}
+                  with open(os.path.join(out, "NOTICE"), "w", newline="\n") as f:
+                      f.write(content)
+                  with open(os.path.join(out, "notice-excluded.json"), "w") as f:
+                      json.dump(excluded, f, indent=2)
+
+                  entries = {}
+                  for block in content.split("\n---------------------------------------------------------\n")[1:]:
+                      m = re.match(r"(\S+) (\S+) - (.+)$", block.strip().splitlines()[0].strip()) if block.strip() else None
+                      if m:
+                          entries[(m.group(1).lower(), m.group(2).lower())] = m.group(3)
+                  reasons = collections.defaultdict(set)
+                  for reason, items in excluded.items():
+                      for it in items:
+                          if isinstance(it, str):
+                              p = it.split("/")
+                              if len(p) >= 5:
+                                  reasons[(f"{p[2]}/{p[3]}".lower(), p[4].lower())].add(reason)
+                          elif it.get("type") == "maven":
+                              reasons[(it["displayName"].replace(":", "/").lower(), it["displayVersion"].lower())].add(reason)
+
+                  moniker = urllib.parse.quote(urllib.parse.quote(branch["moniker"], safe=""), safe="")
+                  regs = call(f"{api}/{gid}/branches/{moniker}/registrations?{ver}")["registrations"]
+                  maven = sorted({(r["flatComponentVersion"]["displayName"].replace(":", "/").lower(), r["flatComponentVersion"]["displayVersion"].lower())
+                                  for r in regs if r["flatComponentVersion"]["type"] == "maven"
+                                  and any(p.get("phaseDisplayName") == phase for p in r.get("pipelines", []))})
+                  missing = collections.defaultdict(list)
+                  for gav in maven:
+                      if gav not in entries:
+                          missing[",".join(sorted(reasons.get(gav, []))) or "noReasonGiven"].append(f"{gav[0]}:{gav[1]}")
+                  no_copyright = sum(1 for gav in entries if "noCopyright" in reasons.get(gav, ()))
+                  report = {"governedRepository": gid, "snapshotType": tid, "build": build, "noticeEntries": len(entries),
+                            "noticeEntriesWithoutCopyright": no_copyright, "registeredMaven": len(maven),
+                            "registeredMavenNotInNotice": {k: v for k, v in sorted(missing.items())},
+                            "excludedCounts": {k: len(v) for k, v in excluded.items()}}
+                  with open(os.path.join(out, "notice-report.json"), "w") as f:
+                      json.dump(report, f, indent=2)
+
+                  print(f"NOTICE: {len(content)} characters, {len(entries)} entries ({no_copyright} without a copyright line)")
+                  print("excluded by reason:", report["excludedCounts"])
+                  print(f"registered Maven components: {len(maven)}, not in NOTICE: {sum(len(v) for v in missing.values())}")
+                  md = ["## Component Governance NOTICE", "",
+                        f"Snapshot type {tid} of build {build}: {len(entries)} entries, {no_copyright} without a copyright line.", "",
+                        "Registered Maven components that are not in the NOTICE. Registrations include test scope, so this is not",
+                        "the shipped set; the completeness check against the shipped jar runs where the jar is built.", "",
+                        "| Reason | Count |", "| --- | --- |"]
+                  md += [f"| {k} | {len(v)} |" for k, v in sorted(missing.items())]
+                  for k, v in sorted(missing.items()):
+                      print(f"  {k} ({len(v)}): " + ", ".join(v))
+                      md += ["", f"**{k}**: " + ", ".join(f"`{x}`" for x in v)]
+                  with open(os.path.join(out, "notice-report.md"), "w") as f:
+                      f.write("\n".join(md) + "\n")
+                  print(f"##vso[task.uploadsummary]{os.path.join(out, 'notice-report.md')}")
+                  PY
+                displayName: Fetch NOTICE for this run's snapshot
+                env:
+                  SYSTEM_ACCESSTOKEN: $(System.AccessToken)
