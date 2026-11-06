@@ -22,6 +22,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.springframework.http.ResponseEntity;
@@ -40,10 +41,7 @@ public interface HealthCheckApi {
       tags = {"health-check-api"})
   @ApiResponses(
       value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "OK",
-            content = {@Content(schema = @Schema(implementation = String.class))}),
+        @ApiResponse(responseCode = "200", description = "OK"),
         @ApiResponse(
             responseCode = "502",
             description = "Bad Gateway",
@@ -53,7 +51,31 @@ public interface HealthCheckApi {
             description = "Service Unavailable",
             content = {@Content(schema = @Schema(implementation = AppError.class))})
       })
+  // Public endpoint: empty @SecurityRequirements clears global bearer so the spec has security: [].
+  @SecurityRequirements
   @PermitAll
+  // No produces: probes often send Accept: text/plain; constraining to application/json would 406 them.
   @GetMapping("/liveness_check")
-  ResponseEntity<String> livenessCheck();
+  ResponseEntity<Void> livenessCheck();
+
+  @Operation(
+      summary = "${healthCheckApi.readinessCheck.summary}",
+      description = "${healthCheckApi.readinessCheck.description}",
+      tags = {"health-check-api"})
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "OK"),
+        @ApiResponse(
+            responseCode = "502",
+            description = "Bad Gateway",
+            content = {@Content(schema = @Schema(implementation = AppError.class))}),
+        @ApiResponse(
+            responseCode = "503",
+            description = "Service Unavailable",
+            content = {@Content(schema = @Schema(implementation = AppError.class))})
+      })
+  @SecurityRequirements
+  @PermitAll
+  @GetMapping("/readiness_check")
+  ResponseEntity<Void> readinessCheck();
 }
