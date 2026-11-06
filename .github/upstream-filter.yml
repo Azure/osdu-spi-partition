@@ -19,6 +19,7 @@ top_level:
   partition-core: keep
   partition-core-plus: strip
   pom.xml: keep
+  schemathesis-tests: keep
 
 testing:
   INTEGRATION-TESTS.md: keep
