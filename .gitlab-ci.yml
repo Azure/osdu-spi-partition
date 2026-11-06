@@ -42,6 +42,32 @@ include:
 
   - local: "devops/core-plus/pipeline/override-stages.yml"
 
+# Core-plus does not require a token. The shared schemathesis template fetches one
+# whenever KEYCLOAK_ENDPOINT, CLIENT_ID, and CLIENT_SECRET are set, then sends it as
+# Authorization. Clear them in the job shell so run_schemathesis.py skips the fetch.
+# Job-level variables cannot override group CI variables of the same name.
+.schemathesis-no-keycloak:
+  before_script:
+    - unset KEYCLOAK_ENDPOINT CLIENT_ID CLIENT_SECRET BEARER_TOKEN
+
+schemathesis-prod-tests:
+  extends:
+    - .cimpl-prod-variables
+    - .schemathesis-osdu-main-tests-template
+    - .schemathesis-no-keycloak
+
+schemathesis-dev-tests:
+  extends:
+    - .cimpl-dev-variables
+    - .schemathesis-osdu-main-tests-template
+    - .schemathesis-no-keycloak
+
+schemathesis-dev-backup-tests:
+  extends:
+    - .cimpl-dev-backup-variables
+    - .schemathesis-osdu-main-tests-template
+    - .schemathesis-no-keycloak
+
 # Java 25 FOSSA image (divido/fossa-with-cache!19). Shared fossa-maven.yml still
 # defaults to v0.10 (JDK 17); override until ci-cd-pipelines bumps the default.
 fossa-analyze:

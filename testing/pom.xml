@@ -29,7 +29,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 		<!-- Pin core test deps once here so CSP testing modules don't drift -->
-		<os-core-common.version>7.1.0</os-core-common.version>
+		<os-core-common.version>8.4.0</os-core-common.version>
 		<lombok.version>1.18.42</lombok.version>
 	</properties>
 

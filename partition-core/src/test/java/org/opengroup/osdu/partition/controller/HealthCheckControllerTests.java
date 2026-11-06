@@ -34,6 +34,13 @@ public class HealthCheckControllerTests {
 	@Test
 	public void should_returnHttp200_when_checkLiveness() {
 		assertEquals(HttpStatus.OK, this.sut.livenessCheck().getStatusCode());
+		assertEquals(null, this.sut.livenessCheck().getBody());
+	}
+
+	@Test
+	public void should_returnHttp200_when_checkReadiness() {
+		assertEquals(HttpStatus.OK, this.sut.readinessCheck().getStatusCode());
+		assertEquals(null, this.sut.readinessCheck().getBody());
 	}
 
 }
