@@ -12,7 +12,7 @@ top_level:
   .gitlab-ci.yml: strip
   .mvn: keep
   LICENSE: keep
-  NOTICE: keep
+  NOTICE: strip
   README.md: strip
   docs: keep
   partition-acceptance-test: keep
