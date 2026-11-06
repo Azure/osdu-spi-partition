@@ -2,6 +2,8 @@ schemaVersion: 3
 service:
   name: partition
   archetype: java-maven-azure
+componentGovernance:
+  upstream: https://community.opengroup.org/osdu/platform/system/partition
 tests:
   acceptance:
     type: maven
