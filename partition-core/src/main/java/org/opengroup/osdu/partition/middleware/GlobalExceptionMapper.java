@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.gson.Gson;
 import org.opengroup.osdu.core.common.exception.NotFoundException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -45,8 +44,6 @@ import java.util.List;
 @ControllerAdvice
 @RestController
 public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
-
-    private static final Gson gson = new Gson();
 
     @Autowired
     private JaxRsDpsLog jaxRsDpsLogger;
@@ -133,6 +130,6 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
             this.jaxRsDpsLogger.warning(exceptionMsg, e);
         }
 
-        return new ResponseEntity<>(gson.toJson(exceptionMsg), HttpStatus.resolve(e.getError().getCode()));
+        return new ResponseEntity<>(e.getError(), HttpStatus.resolve(e.getError().getCode()));
     }
 }

@@ -17,12 +17,12 @@ package org.opengroup.osdu.partition.middleware;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
-import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.opengroup.osdu.core.common.exception.NotFoundException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -47,8 +47,6 @@ import org.mockito.quality.Strictness;
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class GlobalExceptionMapperTest {
 
-    private static final Gson gson = new Gson();
-
     @Mock
     private JaxRsDpsLog log;
 
@@ -61,7 +59,7 @@ public class GlobalExceptionMapperTest {
 
         ResponseEntity<Object> response = sut.handleAppException(exception);
         assertEquals(409, response.getStatusCodeValue());
-        assertEquals("\"any message\"", response.getBody());
+        assertEquals(exception.getError(), response.getBody());
     }
 
     @Test
@@ -78,7 +76,7 @@ public class GlobalExceptionMapperTest {
 
         ResponseEntity<Object> response = sut.handleAppException(exception);
         assertEquals(302, response.getStatusCodeValue());
-        assertEquals(gson.toJson("any message"), response.getBody());
+        assertEquals(exception.getError(), response.getBody());
     }
 
     @Test
@@ -87,7 +85,7 @@ public class GlobalExceptionMapperTest {
 
         ResponseEntity<Object> response = sut.handleNotFoundException(exception);
         assertEquals(404, response.getStatusCodeValue());
-        assertEquals(gson.toJson("any message"), response.getBody());
+        assertEquals(new AppError(404, "Resource not found.", "any message"), response.getBody());
     }
 
     @Test
@@ -128,7 +126,7 @@ public class GlobalExceptionMapperTest {
 
         ResponseEntity<?> response = sut.handleConstraintValidationException(exception);
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
-        assertEquals("\"{\\\"errors\\\":[\\\"Invalid payload\\\"]}\"", response.getBody());
+        assertEquals(new AppError(400, "Validation error.", "{\"errors\":[\"Invalid payload\"]}"), response.getBody());
 
         ConstraintViolation<?> violation = mock(ConstraintViolation.class);
         when(violation.getMessage()).thenReturn("violation");
@@ -136,7 +134,7 @@ public class GlobalExceptionMapperTest {
 
         ResponseEntity<?> response2 = sut.handleConstraintValidationException(exception);
         assertEquals(HttpStatus.BAD_REQUEST.value(), response2.getStatusCodeValue());
-        assertEquals("\"{\\\"errors\\\":[\\\"violation\\\"]}\"", response2.getBody());
+        assertEquals(new AppError(400, "Validation error.", "{\"errors\":[\"violation\"]}"), response2.getBody());
     }
 
     @Test
@@ -144,8 +142,11 @@ public class GlobalExceptionMapperTest {
         Exception exception = new Exception("any message");
 
         ResponseEntity<?> response = sut.handleGeneralException(exception);
+        AppError error = (AppError) response.getBody();
         assertEquals(500, response.getStatusCodeValue());
-        assertEquals(gson.toJson("An unknown error has occurred."), response.getBody());
+        assertEquals(500, error.getCode());
+        assertEquals("Server error.", error.getReason());
+        assertEquals("An unknown error has occurred.", error.getMessage());
     }
 
     @Test
