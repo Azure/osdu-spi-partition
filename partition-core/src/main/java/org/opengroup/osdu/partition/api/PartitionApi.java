@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.partition.model.PartitionInfo;
@@ -80,7 +81,8 @@ public interface PartitionApi {
                @RequestBody @Valid PartitionInfo partitionInfo);
 
     @Operation(summary = "${partitionApi.get.summary}", description = "${partitionApi.get.description}",
-            security = {@SecurityRequirement(name = "Authorization")}, tags = { "partition-api" })
+            tags = { "partition-api" })
+    @SecurityRequirements
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OK",  content = {@Content(schema = @Schema(ref = "#/components/schemas/Map"))}),
             @ApiResponse(responseCode = "400", description = "Bad Request",   content = {@Content(schema = @Schema(implementation = AppError.class ))}),
@@ -114,7 +116,8 @@ public interface PartitionApi {
     ResponseEntity delete(@Parameter(description = "Partition Id") @PathVariable("partitionId") String partitionId);
 
     @Operation(summary = "${partitionApi.list.summary}", description = "${partitionApi.list.description}",
-            security = {@SecurityRequirement(name = "Authorization")}, tags = { "partition-api" })
+            tags = { "partition-api" })
+    @SecurityRequirements
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OK", content = { @Content(array = @ArraySchema(schema = @Schema(implementation = String.class)))}),
             @ApiResponse(responseCode = "400", description = "Bad Request",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
