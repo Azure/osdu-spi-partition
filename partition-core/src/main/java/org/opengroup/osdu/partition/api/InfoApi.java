@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.opengroup.osdu.core.common.model.info.VersionInfo;
 import org.springframework.http.MediaType;
@@ -38,6 +39,7 @@ public interface InfoApi {
   @ApiResponses(value = {
           @ApiResponse(responseCode = "200", description = "Version info.", content = { @Content(schema = @Schema(implementation = VersionInfo.class)) })
   })
+  @SecurityRequirements
   @GetMapping(value = "/info", produces = MediaType.APPLICATION_JSON_VALUE)
   VersionInfo info() throws IOException;
 }

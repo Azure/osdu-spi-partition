@@ -18,14 +18,18 @@
 package org.opengroup.osdu.partition.controller;
 
 import org.opengroup.osdu.partition.api.HealthCheckApi;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class HealthCheckController implements HealthCheckApi {
   @Override
-  public ResponseEntity<String> livenessCheck() {
-    return new ResponseEntity<>("Partition service is alive.", HttpStatus.OK);
+  public ResponseEntity<Void> livenessCheck() {
+    return ResponseEntity.ok().build();
+  }
+
+  @Override
+  public ResponseEntity<Void> readinessCheck() {
+    return ResponseEntity.ok().build();
   }
 }
