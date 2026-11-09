@@ -54,7 +54,7 @@
     <!-- os-core-common 7.0.0 declares lettuce-core as provided; CVE-2025-58057 requires >= 7.5.2.RELEASE -->
     <lettuce.version>7.5.2.RELEASE</lettuce.version>
     <!-- lettuce-core 7.x requires Netty 4.2+; Spring Boot 3.5.16 provides 4.1.x -->
-    <netty.version>4.2.18.Final</netty.version>
+    <netty.version>4.2.20.Final</netty.version>
     <mockito.version>5.23.0</mockito.version>
     <!-- Empty placeholder so Surefire can late-replace @{argLine} (e.g. Jacoco); without it the literal @{argLine} is passed to the JVM and tests fail to start. -->
     <argLine></argLine>
