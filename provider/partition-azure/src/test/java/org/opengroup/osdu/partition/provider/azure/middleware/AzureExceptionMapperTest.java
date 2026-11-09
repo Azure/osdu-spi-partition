@@ -58,7 +58,7 @@ public class AzureExceptionMapperTest {
 
         ResponseEntity<Object> response = sut.handleHttpResponseException(exception);
 
-        assertEquals(429, response.getStatusCodeValue());
+        assertEquals(429, response.getStatusCode().value());
         assertEquals(gson.toJson("Too many reqeusts"), response.getBody());
     }
 
@@ -71,7 +71,7 @@ public class AzureExceptionMapperTest {
 
         ResponseEntity<?> response = sut.handleHttpResponseException(exception);
 
-        assertEquals(500, response.getStatusCodeValue());
+        assertEquals(500, response.getStatusCode().value());
         assertEquals(gson.toJson("An unknown error has occurred."), response.getBody());
     }
 
@@ -82,6 +82,6 @@ public class AzureExceptionMapperTest {
 
         ResponseEntity<Object> responseEntity = sut.getErrorResponse(appException);
 
-        assertEquals(404, responseEntity.getStatusCodeValue());
+        assertEquals(404, responseEntity.getStatusCode().value());
     }
 }

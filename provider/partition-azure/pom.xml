@@ -31,34 +31,17 @@
   </parent>
 
   <properties>
-    <core-lib-azure.version>4.0.0</core-lib-azure.version>
+    <core-lib-azure.version>5.0.0</core-lib-azure.version>
     <!-- Plugin Versions -->
     <surefire-plugin.version>3.5.4</surefire-plugin.version>
-    <jackson.version>2.21.7</jackson.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
-            <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-bom</artifactId>
-        <version>${netty.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-<!-- Jackson override: Spring Boot 3.5.13 and other artifacts provide an older Jackson; we need 2.21.2 for GHSA-72hv-8253-57qq -->
-      <!-- Maybe remove this override when Spring Boot BOM updates to Jackson >= 2.21.2 -->
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <!-- Core Azure Library -->
+      <!-- core-lib-azure-bom manages no Spring Boot artifacts; the framework line comes from the root. -->
       <dependency>
         <groupId>org.opengroup.osdu</groupId>
-        <artifactId>core-lib-azure</artifactId>
+        <artifactId>core-lib-azure-bom</artifactId>
         <version>${core-lib-azure.version}</version>
         <type>pom</type>
         <scope>import</scope>
@@ -82,12 +65,12 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>core-lib-azure</artifactId>
-      <version>${core-lib-azure.version}</version>
     </dependency>
     <!--
-        os-core-common 7.0.0 declares lettuce-core as provided (not propagated).
-        core-lib-azure's IRedisClientFactory uses lettuce types in its signature,
-        so Mockito mocking and runtime instantiation require lettuce-core on the classpath.
+        os-core-common declares lettuce-core as provided (not propagated), and core-lib-azure
+        5.0.0 no longer pins it. core-lib-azure's IRedisClientFactory uses lettuce types in its
+        signature, so Mockito mocking and runtime instantiation require lettuce-core on the
+        classpath; the root's lettuce.version decides the version.
     -->
     <dependency>
       <groupId>io.lettuce</groupId>
@@ -139,12 +122,12 @@
     <!-- Versions managed by parent pom unless otherwise specified -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-test</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
