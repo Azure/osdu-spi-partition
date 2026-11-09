@@ -16,6 +16,7 @@ package org.opengroup.osdu.partition.model;
 
 import jakarta.validation.constraints.NotEmpty;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,7 +29,8 @@ import java.util.Map;
 @Data
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
+// Jackson 3 would otherwise bind through the all-args constructor and skip the @Builder.Default values
+@NoArgsConstructor(onConstructor_ = @JsonCreator)
 @Schema(description = "Partition properties and their values",
         example = "OrderedMap { \"properties\": OrderedMap { \"compliance-ruleset\": OrderedMap { \"sensitive\": false, \"value\": \"shared\" }, \"elastic-endpoint\": OrderedMap { \"sensitive\": true, \"value\": \"elastic-endpoint\" }, \"cosmos-connection\": OrderedMap { \"sensitive\": true, \"value\": \"cosmos-connection\" } } }")
 public class PartitionInfo {
