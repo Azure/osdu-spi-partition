@@ -14,9 +14,9 @@
 
 package org.opengroup.osdu.partition.middleware;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.exc.UnrecognizedPropertyException;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -58,7 +58,7 @@ public class GlobalExceptionMapperTest {
         AppException exception = new AppException(409, "any reason", "any message");
 
         ResponseEntity<Object> response = sut.handleAppException(exception);
-        assertEquals(409, response.getStatusCodeValue());
+        assertEquals(409, response.getStatusCode().value());
         assertEquals(exception.getError(), response.getBody());
     }
 
@@ -67,7 +67,7 @@ public class GlobalExceptionMapperTest {
         AppException exception = new AppException(302, "any reason", "any message");
 
         ResponseEntity<Object> response = sut.handleAppException(exception);
-        assertEquals(302, response.getStatusCodeValue());
+        assertEquals(302, response.getStatusCode().value());
     }
 
     @Test
@@ -75,7 +75,7 @@ public class GlobalExceptionMapperTest {
         AppException exception = new AppException(302, "any reason", "any message");
 
         ResponseEntity<Object> response = sut.handleAppException(exception);
-        assertEquals(302, response.getStatusCodeValue());
+        assertEquals(302, response.getStatusCode().value());
         assertEquals(exception.getError(), response.getBody());
     }
 
@@ -84,16 +84,16 @@ public class GlobalExceptionMapperTest {
         NotFoundException exception = new NotFoundException("any message");
 
         ResponseEntity<Object> response = sut.handleNotFoundException(exception);
-        assertEquals(404, response.getStatusCodeValue());
+        assertEquals(404, response.getStatusCode().value());
         assertEquals(new AppError(404, "Resource not found.", "any message"), response.getBody());
     }
 
     @Test
     public void should_useBadRequestInResponse_When_JsonProcessingExceptionIsHandledByGlobalExceptionMapper() {
-        JsonProcessingException exception = new JsonParseException(null, "any message");
+        JacksonException exception = new StreamReadException("any message");
 
         ResponseEntity<Object> response = sut.handleValidationException(exception);
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
 
     @Test
@@ -101,7 +101,7 @@ public class GlobalExceptionMapperTest {
         UnrecognizedPropertyException exception = mock(UnrecognizedPropertyException.class);
 
         ResponseEntity<Object> response = sut.handleValidationException(exception);
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
 
     @Test
@@ -109,7 +109,7 @@ public class GlobalExceptionMapperTest {
         AccessDeniedException exception = new AccessDeniedException("Access is denied.");
 
         ResponseEntity<Object> response = sut.handleAccessDeniedException(exception);
-        assertEquals(HttpStatus.FORBIDDEN.value(), response.getStatusCodeValue());
+        assertEquals(HttpStatus.FORBIDDEN.value(), response.getStatusCode().value());
     }
 
     @Test
@@ -117,7 +117,7 @@ public class GlobalExceptionMapperTest {
         ValidationException diException = new ValidationException("my bad");
 
         ResponseEntity<?> response = sut.handleValidationException(diException);
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
 
     @Test
@@ -125,7 +125,7 @@ public class GlobalExceptionMapperTest {
         ConstraintViolationException exception = new ConstraintViolationException("my bad", new HashSet<>());
 
         ResponseEntity<?> response = sut.handleConstraintValidationException(exception);
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
         assertEquals(new AppError(400, "Validation error.", "{\"errors\":[\"Invalid payload\"]}"), response.getBody());
 
         ConstraintViolation<?> violation = mock(ConstraintViolation.class);
@@ -133,7 +133,7 @@ public class GlobalExceptionMapperTest {
         exception.getConstraintViolations().add(violation);
 
         ResponseEntity<?> response2 = sut.handleConstraintValidationException(exception);
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response2.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response2.getStatusCode().value());
         assertEquals(new AppError(400, "Validation error.", "{\"errors\":[\"violation\"]}"), response2.getBody());
     }
 
@@ -143,7 +143,7 @@ public class GlobalExceptionMapperTest {
 
         ResponseEntity<?> response = sut.handleGeneralException(exception);
         AppError error = (AppError) response.getBody();
-        assertEquals(500, response.getStatusCodeValue());
+        assertEquals(500, response.getStatusCode().value());
         assertEquals(500, error.getCode());
         assertEquals("Server error.", error.getReason());
         assertEquals("An unknown error has occurred.", error.getMessage());
@@ -156,7 +156,7 @@ public class GlobalExceptionMapperTest {
         HttpRequestMethodNotSupportedException exception = new HttpRequestMethodNotSupportedException("any message");
 
         ResponseEntity<Object> response = sut.handleHttpRequestMethodNotSupported(exception, httpHeaders, HttpStatus.METHOD_NOT_ALLOWED, webRequest);
-        assertEquals(405, response.getStatusCodeValue());
+        assertEquals(405, response.getStatusCode().value());
     }
 
     @Test

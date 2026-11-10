@@ -108,7 +108,7 @@ public class PartitionControllerTest {
     public void should_returnHttp204_when_deletingPartitionSuccessfully() {
         String partitionId = "partition1";
         ResponseEntity<?> result = this.sut.delete(partitionId);
-        assertEquals(HttpStatus.NO_CONTENT.value(), result.getStatusCodeValue());
+        assertEquals(HttpStatus.NO_CONTENT.value(), result.getStatusCode().value());
     }
 
     @Test
