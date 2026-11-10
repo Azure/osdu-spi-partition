@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.3.4](https://github.com/Azure/osdu-spi-partition/compare/v1.3.3...v1.3.4) (2026-11-07)
+
+
+### 🐛 Bug Fixes
+
+* [Venus] Remove IBM provider code and CI/CD from Partition ([#237](https://github.com/Azure/osdu-spi-partition/issues/237)) ([3d857f7](https://github.com/Azure/osdu-spi-partition/commit/3d857f70fd53f2b38330f7eb88b0258654488cb3))
+* [Venus] Verify the deployed revision in Partition acceptance tests ([#232](https://github.com/Azure/osdu-spi-partition/issues/232)) ([389d55a](https://github.com/Azure/osdu-spi-partition/commit/389d55a6ffaa4bd46981a10e0c0e6405dd44a07e))
+* **azure:** Decode istio x-payload header as base64url ([5c53ff0](https://github.com/Azure/osdu-spi-partition/commit/5c53ff0fc231d0cb7a01b9e0f6dde43f58affa65))
+* **azure:** Decode istio x-payload header as base64url ([d84caeb](https://github.com/Azure/osdu-spi-partition/commit/d84caeb43814124776994e24b529c9ae8120de16))
+* Sync upstream changes from 62df5bab ([a334a4e](https://github.com/Azure/osdu-spi-partition/commit/a334a4e21c3db8b3bd0c94fbc073145e4093fa61))
+* Sync upstream changes from d3c3b222 ([91d285e](https://github.com/Azure/osdu-spi-partition/commit/91d285e231d0d6a832f879d04dc84092ac88672a))
+* Sync upstream changes from f93508aa ([3fbf59e](https://github.com/Azure/osdu-spi-partition/commit/3fbf59ef245bd76597e16b44ae2accf8265766ce))
+
+
+### 🔧 Miscellaneous
+
+* Classify upstream schemathesis-tests in upstream filter ([ae8f635](https://github.com/Azure/osdu-spi-partition/commit/ae8f63567840fb9e51511bea7984d0e60990cc91))
+* Declare component governance inputs ([8403c82](https://github.com/Azure/osdu-spi-partition/commit/8403c82989741b9fff6c7fa9c672272923918c03))
+* Declare component governance inputs ([7f95c45](https://github.com/Azure/osdu-spi-partition/commit/7f95c45a1da31e39ee09b5df2001d182c7d906ef))
+* **deps:** Bump com.google.guava:guava ([bab15ee](https://github.com/Azure/osdu-spi-partition/commit/bab15ee646e089aed6a0671e304f3f618c63e343))
+* **deps:** Bump com.google.guava:guava ([40cd235](https://github.com/Azure/osdu-spi-partition/commit/40cd235e57c3df5a612373611eec940896450958))
+* **deps:** Bump com.google.guava:guava from 33.4.8-jre to 33.7.1-jre in /testing/partition-test-azure ([f7f9829](https://github.com/Azure/osdu-spi-partition/commit/f7f9829add1ecbc57eaf8eeb4159349b021a633d))
+* **deps:** Bump com.google.guava:guava from 33.7.1-jre to 33.7.2-jre in /testing/partition-test-azure ([8d27033](https://github.com/Azure/osdu-spi-partition/commit/8d270333e5cc04765ffef3a4735a5f37ee1bbf66))
+* Generate filtered upstream tree ([009e4fd](https://github.com/Azure/osdu-spi-partition/commit/009e4fd6be435ce18a81b59a2d50d9f0cf45bbc6))
+* Generate filtered upstream tree ([6b0c4bd](https://github.com/Azure/osdu-spi-partition/commit/6b0c4bd1e0cb8fe5bf083d769acdc2e55ca882b3))
+* Generate filtered upstream tree ([b331fa2](https://github.com/Azure/osdu-spi-partition/commit/b331fa27d2c317fc198f421c6707e37e4358e42d))
+* **notice:** Refresh NOTICE from Component Governance ([31e9359](https://github.com/Azure/osdu-spi-partition/commit/31e9359a43b457c46b627dbd58c035248f392abd))
+* **notice:** Refresh NOTICE from Component Governance ([9f48d0a](https://github.com/Azure/osdu-spi-partition/commit/9f48d0a07d4091fabd306ef199578f2a086eb09d))
+* Plan upstream filter classification for schemathesis-tests ([787dcca](https://github.com/Azure/osdu-spi-partition/commit/787dcca52e0e830ba44398e669b26b173ce4231a))
+* Sync template updates ([03ab780](https://github.com/Azure/osdu-spi-partition/commit/03ab780c0fe9e7c9d4c9ceee1a41ab93640f4cc9))
+* Sync template updates ([2e4dd6b](https://github.com/Azure/osdu-spi-partition/commit/2e4dd6bcabb5f68b59969ce57f8a5a7522dbaf33))
+* Sync template updates ([40be516](https://github.com/Azure/osdu-spi-partition/commit/40be516838977ff57acfca5c414c7829d7a045c9))
+* Sync template updates ([549a02b](https://github.com/Azure/osdu-spi-partition/commit/549a02b63a444b28c7ffaeb0359b207a1c8db13d))
+* Sync template updates ([5705cf1](https://github.com/Azure/osdu-spi-partition/commit/5705cf183293a6a7383a8a9dc4ca76a4634ef09a))
+* Sync template updates ([010e64f](https://github.com/Azure/osdu-spi-partition/commit/010e64f3d273ce591b55dce74d4c625c606cd878))
+* Sync template updates ([612dfa6](https://github.com/Azure/osdu-spi-partition/commit/612dfa6a12a1addd3cb784e2af16bd8141289091))
+* Sync template updates ([d6d790b](https://github.com/Azure/osdu-spi-partition/commit/d6d790b29c9ba2f5990341531d38c8b280ced71d))
+* Sync template updates ([7724bc1](https://github.com/Azure/osdu-spi-partition/commit/7724bc1fed3a0293158916ffbccdd63a40653410))
+* **template-sync:** Sync template updates (updated 2026-10-27) ([2ceacec](https://github.com/Azure/osdu-spi-partition/commit/2ceacecaf303d5d668f6f47a6a97b58088b85390))
+* **template-sync:** Sync template updates (updated 2026-11-02) ([79bf0d4](https://github.com/Azure/osdu-spi-partition/commit/79bf0d40b3bfb2761c971b01ea42bbe4c928a016))
+* **template-sync:** Sync template updates (updated 2026-11-04) ([716ed84](https://github.com/Azure/osdu-spi-partition/commit/716ed843e37193157ba8d7b5d0efb187c2f917c3))
+* **template-sync:** Sync template updates (updated 2026-11-05) ([830596b](https://github.com/Azure/osdu-spi-partition/commit/830596b57d3813811de01000590aafabb4434c9f))
+* **template-sync:** Sync template updates 2026-10-27 ([44e7aab](https://github.com/Azure/osdu-spi-partition/commit/44e7aaba03d109ee6f746a07c05b4d131997786f))
+* **template-sync:** Sync template updates 2026-10-30 ([4fa51b9](https://github.com/Azure/osdu-spi-partition/commit/4fa51b93e189f4958f765ef405a9f84ac8e1cb8c))
+* **template-sync:** Sync template updates 2026-11-02 ([676eb24](https://github.com/Azure/osdu-spi-partition/commit/676eb2480d6954205e627317365255448ee12dc7))
+* **template-sync:** Sync template updates 2026-11-03 ([f753fc3](https://github.com/Azure/osdu-spi-partition/commit/f753fc3493e33709e897a377caefce9a1200b759))
+* **template-sync:** Sync template updates 2026-11-06 ([b98fadb](https://github.com/Azure/osdu-spi-partition/commit/b98fadb59fd8592ab87efb341459f494d3cb225c))
+* Update NOTICE from fossa-check-notice ([b97441f](https://github.com/Azure/osdu-spi-partition/commit/b97441f9191c2b6ddfb3abbba8f8066012e62da0))
+
+
+### 🔨 Build System
+
+* **azure:** Remove spi-packages maven repository from pom ([e332112](https://github.com/Azure/osdu-spi-partition/commit/e3321122748e489d8afb19e6b62ac22d268c0814))
+* **azure:** Remove spi-packages maven repository from pom ([4522c9a](https://github.com/Azure/osdu-spi-partition/commit/4522c9a66db6056ec8f76e1db6e4c66f8f764196))
+
 ## [1.3.3](https://github.com/Azure/osdu-spi-partition/compare/v1.3.2...v1.3.3) (2026-10-20)
 
 
