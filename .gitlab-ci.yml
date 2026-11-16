@@ -12,6 +12,15 @@ variables:
   CIMPL_OPENAPI_CONFIG_ROUTE: /api/partition/v1/api-docs/swagger-config
   SCHEMATHESIS_OPENAPI_YAML_ROUTE: /api/partition/v1/api-docs.yaml
 
+# The shared coverage job runs partition-core and partition-core-plus in separate Maven
+# invocations and starts before compile-and-unit-test has published anything. Install the
+# reactor first so partition-core-plus resolves the in-repo partition-core and its compiled
+# classes are available to the SonarCloud job that consumes the coverage artifacts.
+core_code_coverage:
+  before_script:
+    - !reference [.maven, before_script]
+    - $MAVEN -pl partition-core,partition-core-plus -am install -DskipTests=true
+
 include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "standard-setup.yml"
