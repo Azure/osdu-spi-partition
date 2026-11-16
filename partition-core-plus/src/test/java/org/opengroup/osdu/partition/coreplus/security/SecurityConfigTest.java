@@ -44,7 +44,6 @@ public class SecurityConfigTest {
         when(http.csrf(any())).thenReturn(http);
         when(http.sessionManagement(any())).thenReturn(http);
         when(http.authorizeHttpRequests(any())).thenReturn(http);
-        when(http.httpBasic(any())).thenReturn(http);
 
         new SecurityConfig().filterChain(http);
 
@@ -52,7 +51,6 @@ public class SecurityConfigTest {
         verify(http).csrf(any());
         verify(http).sessionManagement(any());
         verify(http).authorizeHttpRequests(any());
-        verify(http).httpBasic(any());
         verify(http).build();
         verifyNoMoreInteractions(http);
     }
