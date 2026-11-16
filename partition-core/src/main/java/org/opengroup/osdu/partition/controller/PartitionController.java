@@ -72,6 +72,9 @@ public class PartitionController implements PartitionApi {
     @Override
     public List<String> list() {
         List<String> partitions = this.partitionService.getAllPartitions();
+        if (partitions == null) {
+            partitions = Collections.emptyList();
+        }
         this.auditLogger.readListPartitionSuccess(
                 Collections.singletonList(String.format("Partition list size = %s", partitions.size())));
         return partitions;
