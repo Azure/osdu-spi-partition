@@ -29,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +109,7 @@ public class PartitionControllerTest {
     public void should_returnHttp204_when_deletingPartitionSuccessfully() {
         String partitionId = "partition1";
         ResponseEntity<?> result = this.sut.delete(partitionId);
-        assertEquals(HttpStatus.NO_CONTENT.value(), result.getStatusCodeValue());
+        assertEquals(HttpStatus.NO_CONTENT.value(), result.getStatusCode().value());
     }
 
     @Test
@@ -137,5 +138,16 @@ public class PartitionControllerTest {
         List<String> result = this.sut.list();
         assertNotNull(result);
         assertEquals(partitions.size(), result.size());
+    }
+
+    @Test
+    public void should_returnEmptyListAndAuditSizeZero_when_serviceReturnsNullPartitionList() {
+        when(partitionService.getAllPartitions()).thenReturn(null);
+
+        List<String> result = this.sut.list();
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(auditLogger).readListPartitionSuccess(Collections.singletonList("Partition list size = 0"));
     }
 }
