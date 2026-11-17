@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.5](https://github.com/Azure/osdu-spi-partition/compare/v1.3.4...v1.3.5) (2026-11-17)
+
+
+### 🐛 Bug Fixes
+
+* Sync upstream changes from f5cfc2df ([2340e1c](https://github.com/Azure/osdu-spi-partition/commit/2340e1c514474d9393e3cb4b04eb4d859b91c2a6))
+
+
+### 🔧 Miscellaneous
+
+* Generate filtered upstream tree ([c7c8f97](https://github.com/Azure/osdu-spi-partition/commit/c7c8f9778b9d6b7bd4b9aac8476141aff970b176))
+* Sync template updates ([e69553a](https://github.com/Azure/osdu-spi-partition/commit/e69553a52e2605d04ac54825b4cd63c58b5ba92c))
+* **template-sync:** Sync template updates 2026-11-16 ([c5aa806](https://github.com/Azure/osdu-spi-partition/commit/c5aa80645f9067ae7811844f1508450210af0caa))
+
+
+### 🔨 Build System
+
+* **azure:** Upgrade core-lib-azure to 5.0.0 for Spring Boot 4 ([44d2d64](https://github.com/Azure/osdu-spi-partition/commit/44d2d641fb801de10ea49841e61f68871c8950cb))
+
 ## [1.3.4](https://github.com/Azure/osdu-spi-partition/compare/v1.3.3...v1.3.4) (2026-11-07)
 
 
