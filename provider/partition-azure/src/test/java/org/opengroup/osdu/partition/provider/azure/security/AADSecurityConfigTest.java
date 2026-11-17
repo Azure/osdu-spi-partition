@@ -25,7 +25,7 @@ import org.opengroup.osdu.partition.provider.interfaces.IPartitionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -45,14 +45,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class AADSecurityConfigTest {
     private MockMvc mockMvc = null;
 
-    @MockBean
+    @MockitoBean
     @Qualifier("partitionServiceImpl")
     private IPartitionService partitionService;
 
-    @MockBean
+    @MockitoBean
     private AuditLogger auditLogger;
 
-    @MockBean
+    @MockitoBean
     private UserPrincipalManager userPrincipalManager;
 
     @Autowired

@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.azure.cache.IRedisClientFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,7 +37,7 @@ public class RedisConfigTest {
         "redis.command.timeout=2000"
     })
     class BaseTest {
-        @MockBean
+        @MockitoBean
         IRedisClientFactory redisClientFactory;
         @Autowired
         RedisConfig redisConfig;
