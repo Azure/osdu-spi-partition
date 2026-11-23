@@ -48,7 +48,7 @@
     <lombok.version>1.18.42</lombok.version>
     <guava.version>33.7.2-jre</guava.version>
     <commons-lang3.version>3.20.0</commons-lang3.version>
-    <swagger-core.version>2.2.47</swagger-core.version>
+    <swagger-core.version>2.2.56</swagger-core.version>
     <!-- os-core-common declares lettuce-core as provided; CVE-2025-58057 requires >= 7.5.2.RELEASE -->
     <lettuce.version>7.5.2.RELEASE</lettuce.version>
     <!-- lettuce-core 7.x requires Netty 4.2+; keep the patched 4.2.x line -->
