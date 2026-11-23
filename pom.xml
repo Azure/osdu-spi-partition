@@ -35,7 +35,7 @@
     <spring-boot.version>4.0.9</spring-boot.version>
     <spring-security.version>7.0.7</spring-security.version>
     <spring-framework.version>7.0.10</spring-framework.version>
-    <tomcat.version>11.0.27</tomcat.version>
+    <tomcat.version>11.0.29</tomcat.version>
     <log4j.version>2.25.5</log4j.version>
     <!-- jackson-core/databind 2.21.4/2.21.5 → HIGH CVEs fixed in 2.21.7.
          Import the Jackson 2 and Jackson 3 BOMs ahead of spring-boot-dependencies so the whole lines move. -->
