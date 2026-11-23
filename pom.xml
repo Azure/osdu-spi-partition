@@ -34,7 +34,7 @@
     <!-- Spring Versions-->
     <spring-boot.version>4.0.9</spring-boot.version>
     <spring-security.version>7.0.7</spring-security.version>
-    <spring-framework.version>7.0.10</spring-framework.version>
+    <spring-framework.version>7.0.11</spring-framework.version>
     <tomcat.version>11.0.27</tomcat.version>
     <log4j.version>2.25.5</log4j.version>
     <!-- jackson-core/databind 2.21.4/2.21.5 → HIGH CVEs fixed in 2.21.7.
