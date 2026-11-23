@@ -52,7 +52,7 @@
     <!-- os-core-common declares lettuce-core as provided; CVE-2025-58057 requires >= 7.5.2.RELEASE -->
     <lettuce.version>7.5.2.RELEASE</lettuce.version>
     <!-- lettuce-core 7.x requires Netty 4.2+; keep the patched 4.2.x line -->
-    <netty.version>4.2.19.Final</netty.version>
+    <netty.version>4.2.21.Final</netty.version>
     <mockito.version>5.23.0</mockito.version>
     <!-- Empty placeholder so Surefire can late-replace @{argLine} (e.g. Jacoco); without it the literal @{argLine} is passed to the JVM and tests fail to start. -->
     <argLine></argLine>
